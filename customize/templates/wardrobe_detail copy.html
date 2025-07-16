@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Wardrobe #{{ wardrobe.id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12 md:py-16 lg:py-20 font-inter">
+  <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-10 text-center leading-tight">
+    Your Custom Wardrobe Preview
+  </h2>
+
+  <div class="grid md:grid-cols-2 gap-8 md:gap-12 items-start">
+
+    <!-- SVG Preview Section with 3D Style -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700 transform hover:scale-[1.01] transition duration-300 ease-in-out">
+      <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b pb-3 border-gray-200 dark:border-gray-700">Visual Blueprint (3D Style)</h3>
+      <div class="w-full h-96 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 dark:from-gray-700 dark:to-gray-900 rounded-xl overflow-hidden shadow-inner">
+        <svg width="300" height="350" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg" class="shadow-lg rounded-lg">
+          <defs>
+            <!-- Linear gradient for 3D effect on the wardrobe body -->
+            <linearGradient id="wardrobeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#f0f0f0;stop-opacity:1" />
+              <stop offset="50%" style="stop-color:#d1d5db;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#a0a0a0;stop-opacity:1" />
+            </linearGradient>
+
+            <!-- Gradient for handles to give them a metallic/rounded look -->
+            <radialGradient id="handleGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+              <stop offset="60%" style="stop-color:#7f7f7f;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#4a4a4a;stop-opacity:1" />
+            </radialGradient>
+
+            <!-- Pattern for texture image if available -->
+            {% if wardrobe.material.texture_image %}
+            <pattern id="texture" patternUnits="userSpaceOnUse" width="300" height="350">
+              <image href="{{ wardrobe.material.texture_image.url }}" x="0" y="0" width="300" height="350" preserveAspectRatio="xMidYMid slice" />
+            </pattern>
+            {% endif %}
+          </defs>
+
+          <!-- Shadow effect for the wardrobe (simple offset rectangle) -->
+          <rect x="25" y="25" width="260" height="310" rx="15" ry="15" fill="#000000" opacity="0.1" />
+
+          <!-- Outer rectangle for wardrobe body - filled with gradient or texture -->
+          <rect x="20" y="20" width="260" height="310" rx="15" ry="15"
+                fill="{% if wardrobe.material.texture_image %}url(#texture){% else %}url(#wardrobeGradient){% endif %}" 
+                stroke="#333333" stroke-width="3" />
+          
+          <!-- Doors split - slightly darker for depth -->
+          <line x1="150" y1="20" x2="150" y2="330" stroke="#222222" stroke-width="3" />
+          
+          <!-- Handles with gradient -->
+          <circle cx="130" cy="175" r="6" fill="url(#handleGradient)" stroke="#ffffff" stroke-width="1"/>
+          <circle cx="170" cy="175" r="6" fill="url(#handleGradient)" stroke="#ffffff" stroke-width="1"/>
+
+        </svg>
+      </div>
+    </div>
+
+    <!-- Details Section -->
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 md:p-8 border border-gray-200 dark:border-gray-700 transform hover:scale-[1.01] transition duration-300 ease-in-out">
+      <h3 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b pb-3 border-gray-200 dark:border-gray-700">Wardrobe Specifications</h3>
+      <ul class="space-y-4 text-gray-700 dark:text-gray-300 text-lg">
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Material:</strong> 
+          <span class="text-gray-700 dark:text-gray-300">{{ wardrobe.material.name }}</span>
+        </li>
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Width:</strong> 
+          <span class="text-gray-700 dark:text-gray-300">{{ wardrobe.width }} ft</span>
+        </li>
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Height:</strong> 
+          <span class="text-gray-700 dark:text-gray-300">{{ wardrobe.height }} ft</span>
+        </li>
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Depth:</strong> 
+          <span class="text-gray-700 dark:text-gray-300">{{ wardrobe.depth }} ft</span>
+        </li>
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Estimated Cost:</strong>
+          <span class="text-amber-600 dark:text-amber-400 font-extrabold text-xl">
+            ${{ wardrobe.estimated_cost }}
+          </span>
+        </li>
+        <li class="flex justify-between items-center">
+          <strong class="text-gray-900 dark:text-gray-100">Created On:</strong> 
+          <span class="text-gray-700 dark:text-gray-300">{{ wardrobe.created_at|date:"F j, Y, P" }}</span>
+        </li>
+      </ul>
+      <div class="mt-8 flex flex-col sm:flex-row sm:justify-center gap-4">
+        <a href="{% url 'create_wardrobe' %}"
+           class="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-800">
+          Create Another Wardrobe
+        </a>
+        <a href="{% url 'wardrobe_3d_view' wardrobe.id %}"
+           class="flex-1 text-center bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-3 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus:ring-4 focus:ring-green-300 dark:focus:ring-green-800">
+          View in 3D
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

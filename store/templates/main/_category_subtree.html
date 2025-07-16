@@ -1,0 +1,111 @@
+<li class="relative">
+    {% if not category.is_root and not forloop.first %}
+    <div class="absolute left-0 top-0 h-1/2 w-px bg-gray-300 dark:bg-gray-600 ml-4 -translate-x-1/2"></div>
+    {% endif %}
+
+    <div class="flex items-center group">
+        {% if not category.is_root %}
+        <div class="w-4 h-px bg-gray-300 dark:bg-gray-600"></div>
+        {% endif %}
+
+        {% if category.children.all %}
+        <!-- Animated grid/app icon for parent categories -->
+        <span class="grid-icon flex-shrink-0">
+            <svg class="w-6 h-6 text-indigo-400 dark:text-indigo-300" viewBox="0 0 24 24" fill="none">
+                <rect x="3" y="3" width="7" height="7" rx="2" fill="currentColor" class="grid-square" style="transition:fill 0.3s;" />
+                <rect x="14" y="3" width="7" height="7" rx="2" fill="currentColor" class="grid-square" style="transition:fill 0.3s;" />
+                <rect x="3" y="14" width="7" height="7" rx="2" fill="currentColor" class="grid-square" style="transition:fill 0.3s;" />
+                <rect x="14" y="14" width="7" height="7" rx="2" fill="currentColor" class="grid-square" style="transition:fill 0.3s;" />
+            </svg>
+        </span>
+        {% else %}
+        <!-- Animated tag/label icon for leaf categories -->
+        <span class="label-icon flex-shrink-0">
+            <svg class="w-5 h-5 text-emerald-400 dark:text-emerald-300" viewBox="0 0 24 24" fill="none">
+                <path d="M3 7a2 2 0 012-2h7a2 2 0 011.41.59l7 7a2 2 0 010 2.82l-7 7a2 2 0 01-2.82 0l-7-7A2 2 0 013 14V7z" fill="currentColor" class="label-body" style="transition:fill 0.3s;" />
+                <circle cx="8.5" cy="8.5" r="1.5" fill="#34d399" class="label-dot" style="transition:fill 0.3s;" />
+            </svg>
+        </span>
+        {% endif %}
+<style>
+.grid-icon:hover .grid-square {
+    fill: #6366f1;
+}
+.label-icon:hover .label-body {
+    fill: #10b981;
+}
+.label-icon:hover .label-dot {
+    fill: #a7f3d0;
+}
+.grid-icon, .label-icon {
+    display: inline-block;
+    transition: transform 0.3s;
+}
+.grid-icon:hover, .label-icon:hover {
+    transform: scale(1.15) rotate(-6deg);
+}
+</style>
+
+        <a href="{% url 'furniture_list' %}?category_id={{ category.pk }}"
+           class="flex-grow ml-2 px-3 py-1 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700 transition duration-200 ease-in-out
+                  {% if category.pk == selected_category_id|add:0 %}
+                      bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 font-semibold shadow-inner
+                  {% endif %}">
+            {{ category.name }}
+        </a>
+        {% if category.children.all %}
+        <button type="button" class="ml-2 text-gray-500 dark:text-gray-400 focus:outline-none category-toggle" onclick="toggleCategory(this)">
+            <svg class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6" />
+            </svg>
+        </button>
+        {% endif %}
+    </div>
+
+    {% if category.children.all %}
+        {# Add a data attribute to help JS know if this branch contains the selected category #}
+        {% with subtree_active=False %}
+            {% for child in category.children.all %}
+                {% if child.pk == selected_category_id|add:0 %}
+                    {% with subtree_active=True %}{% endwith %}
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+        <ul class="relative ml-4 mt-1 category-children" data-subtree-active="{% if category.pk == selected_category_id|add:0 %}1{% else %}{% for child in category.children.all %}{% if child.pk == selected_category_id|add:0 %}1{% endif %}{% endfor %}{% endif %}">
+            <div class="absolute left-0 top-0 h-full w-px bg-gray-300 dark:bg-gray-600 ml-4 -translate-x-1/2"></div>
+            {% for child in category.children.all %}
+                {% include 'main/_category_subtree.html' with category=child selected_category_id=selected_category_id is_root=False %}
+            {% endfor %}
+        </ul>
+    {% endif %}
+</li>
+
+<script>
+function toggleCategory(btn) {
+    const children = btn.parentElement.parentElement.querySelector('.category-children');
+    if (children) {
+        if (children.style.display === 'none') {
+            children.style.display = 'block';
+            btn.querySelector('svg').style.transform = 'rotate(0deg)';
+        } else {
+            children.style.display = 'none';
+            btn.querySelector('svg').style.transform = 'rotate(-90deg)';
+        }
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.category-children').forEach(function(ul) {
+        // Expand if this branch contains the selected category
+        if (ul.dataset.subtreeActive === '1') {
+            ul.style.display = 'block';
+            // Rotate chevron if open
+            const btn = ul.parentElement.querySelector('.category-toggle');
+            if (btn) {
+                btn.querySelector('svg').style.transform = 'rotate(0deg)';
+            }
+        } else {
+            ul.style.display = 'none';
+        }
+    });
+});
+</script>

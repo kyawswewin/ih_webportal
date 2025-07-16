@@ -1,0 +1,15 @@
+routes
+------------------
+/api/furniture/
+/api/cart/add/
+/api/cart/view/
+/api/order/
+
+
+
+requirements
+--------------------------
+pip install djangorestframework
+pip install django
+pip install pillow
+

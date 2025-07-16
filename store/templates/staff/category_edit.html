@@ -1,0 +1,50 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Edit Category{% endblock %}
+{% block page_title %}Edit: {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-2xl font-bold mb-4 text-gray-800">Edit Category: {{ category.name }}</h2>
+    
+    {# The form's action points back to the staff_category_edit URL with the category's primary key #}
+    <form method="post" action="{% url 'staff_category_edit' category.pk %}" class="space-y-4">
+        {% csrf_token %}
+        
+        {# Display non-field errors if any #}
+        {% if form.non_field_errors %}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">{{ form.non_field_errors }}</span>
+            </div>
+        {% endif %}
+
+        <div>
+            <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700">Category Name</label>
+            {{ form.name }}
+            {% if form.name.errors %}<p class="mt-1 text-sm text-red-600">{{ form.name.errors }}</p>{% endif %}
+        </div>
+        
+        <div>
+            <label for="{{ form.parent.id_for_label }}" class="block text-sm font-medium text-gray-700">Parent Category</label>
+            {{ form.parent }}
+            {% if form.parent.errors %}<p class="mt-1 text-sm text-red-600">{{ form.parent.errors }}</p>{% endif %}
+        </div>
+
+        <!-- {# Hidden field for slug if you want it to be automatically updated by the save method #}
+        {# If you want to allow manual slug editing in the form, you'd add {{ form.slug }} here #}
+        {# <div>
+            <label for="{{ form.slug.id_for_label }}" class="block text-sm font-medium text-gray-700">Slug</label>
+            {{ form.slug }}
+            {% if form.slug.errors %}<p class="mt-1 text-sm text-red-600">{{ form.slug.errors }}</p>{% endif %}
+        </div> #} -->
+
+        <div class="flex items-center space-x-4">
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Save Changes
+            </button>
+            <a href="{% url 'staff_category_list' %}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

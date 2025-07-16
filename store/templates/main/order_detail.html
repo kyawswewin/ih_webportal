@@ -1,0 +1,157 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Order #{{ order.order_number }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Bold, Structured Background */
+    .structured-bg {
+        background-color: #f5f5f5; /* A slightly darker off-white */
+    }
+    .dark .structured-bg {
+        background-color: #1a1a1a; /* Very deep dark gray/near black */
+    }
+
+    /* Prominent, defined shadow */
+    .shadow-defined {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    .dark .shadow-defined {
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 5px 15px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Animations remain for smooth entry */
+    .animate-slide-up {
+        animation: slideUp 0.6s ease-out forwards;
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    @keyframes slideUp {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+    .delay-600 { animation-delay: 0.6s; } /* Added for buttons */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12 sm:px-6 lg:px-8 max-w-7xl">
+    <h2 class="text-5xl lg:text-6xl font-extrabold text-center text-gray-900 dark:text-gray-50 mb-16 pb-8 border-b-4 border-amber-600 dark:border-amber-400 animate-fadeIn delay-100">
+        ORDER <span class="text-amber-600 dark:text-amber-400">#{{ order.order_number }}</span>
+    </h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+
+        {# Order Summary Card #}
+        <div class="structured-bg rounded-lg shadow-defined p-8 border border-gray-200 dark:border-gray-800 animate-slide-up delay-200">
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-700">Order Summary</h3>
+            <div class="space-y-4 text-gray-700 dark:text-gray-300 text-base">
+                <p><strong class="text-gray-900 dark:text-gray-100">Order ID:</strong> <span class="font-mono text-lg">{{ order.order_number }}</span></p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Placed On:</strong> {{ order.created_at|date:"F j, Y, P" }}</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Last Updated:</strong> {{ order.updated_at|date:"F j, Y, P" }}</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Status:</strong>
+                    <span class="font-bold text-lg px-3 py-1 rounded-full
+                        {% if order.status == 'Delivered' %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100{% elif order.status == 'Cancelled' %}bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100{% else %}bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Payment Status:</strong>
+                    <span class="font-bold text-lg px-3 py-1 rounded-full
+                        {% if order.payment_status == 'Completed' %}bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100{% elif order.payment_status == 'Failed' %}bg-red-100 text-red-800 dark:bg-red-700 dark:text-red-100{% else %}bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100{% endif %}">
+                        {{ order.get_payment_status_display }}
+                    </span>
+                </p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Payment Method:</strong> <span class="font-semibold">{{ order.payment_method|default:"N/A" }}</span></p>
+            </div>
+            <div class="mt-8 pt-6 border-t-2 border-gray-300 dark:border-gray-700">
+                <p class="text-4xl font-extrabold text-gray-900 dark:text-gray-100">TOTAL:
+                    <span class="text-amber-600 dark:text-amber-400">${{ order.total_amount|floatformat:2 }}</span>
+                </p>
+            </div>
+        </div>
+
+        {# Customer Details Card #}
+        <div class="structured-bg rounded-lg shadow-defined p-8 border border-gray-200 dark:border-gray-800 animate-slide-up delay-300">
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-700">Customer Details</h3>
+            <div class="space-y-4 text-gray-700 dark:text-gray-300 text-base">
+                {% if order.user %}
+                    <p><strong class="text-gray-900 dark:text-gray-100">Account User:</strong> <span class="font-semibold text-lg">{{ order.user.username }}</span></p>
+                    <p><strong class="text-gray-900 dark:text-gray-100">C-Code:</strong> <span class="font-mono text-lg">{{ order.user.c_code|default:"N/A" }}</span></p>
+                {% else %}
+                    <p><strong class="text-gray-900 dark:text-gray-100">Account User:</strong> <span class="font-semibold text-lg">Guest Checkout</span></p>
+                    <p><strong class="text-gray-900 dark:text-gray-100">C-Code:</strong> <span class="font-mono text-lg">N/A</span></p>
+                {% endif %}
+                <p><strong class="text-gray-900 dark:text-gray-100">Contact Name:</strong> {{ order.customer_name }}</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Phone:</strong> {{ order.customer_phone }}</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Ship To Address:</strong> <span class="block mt-2 leading-relaxed">{{ order.customer_address }}</span></p>
+            </div>
+        </div>
+
+        {# Shipping & Notes Card (Optional) #}
+        <div class="structured-bg rounded-lg shadow-defined p-8 border border-gray-200 dark:border-gray-800 animate-slide-up delay-400 md:col-span-2 lg:col-span-1">
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 pb-4 border-b-2 border-gray-300 dark:border-gray-700">Shipping & Notes</h3>
+            <div class="space-y-4 text-gray-700 dark:text-gray-300 text-base">
+                <p><strong class="text-gray-900 dark:text-gray-100">Delivery Method:</strong> Standard Shipping</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Estimated Delivery:</strong> 3-5 business days from shipment.</p>
+                <p><strong class="text-gray-900 dark:text-gray-100">Notes:</strong> Please ensure someone is available to receive the delivery. For large items, consider arranging assistance.</p>
+                <p class="mt-6"><strong class="text-gray-900 dark:text-gray-100">Customer Support:</strong> <a href="mailto:support@inhousemm.com" class="text-blue-600 hover:underline dark:text-blue-400">info@inhousemm.com</a></p>
+            </div>
+        </div>
+
+    </div>
+
+    <h3 class="text-3xl lg:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-10 text-center animate-fadeIn delay-500">Order Items</h3>
+    {% if order.items.all %}
+        <div class="overflow-hidden structured-bg rounded-lg shadow-defined border border-gray-200 dark:border-gray-800 p-6 animate-slide-up delay-600">
+            <table class="min-w-full divide-y-2 divide-gray-300 dark:divide-gray-700"> 
+                <thead class="bg-gray-100 dark:bg-gray-700"> 
+                    <tr>
+                        <th scope="col" class="py-5 px-6 text-left text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">ITEM DESCRIPTION</th> {# All caps for header #}
+                        <th scope="col" class="py-5 px-6 text-left text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">CODE</th>
+                        <th scope="col" class="py-5 px-6 text-left text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">QTY</th>
+                        <th scope="col" class="py-5 px-6 text-left text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">UNIT PRICE</th>
+                        <th scope="col" class="py-5 px-6 text-left text-sm font-bold text-gray-700 dark:text-gray-200 uppercase tracking-wider">TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for item in order.items.all %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                            <td class="py-4 px-6 flex items-center">
+                                {% if item.furniture.image %}
+                                    <img src="{{ item.furniture.image.url }}" alt="{{ item.furniture.name }}" class="w-20 h-20 object-cover rounded-md shadow-sm mr-4 border border-gray-200 dark:border-gray-600">
+                                {% endif %}
+                                <span class="text-gray-800 dark:text-gray-200 font-medium text-base">{{ item.furniture.name }}</span>
+                            </td>
+                            <td class="py-4 px-6 text-gray-700 dark:text-gray-300 font-mono text-sm">{{ item.furniture.item_code|default:"N/A" }}</td>
+                            <td class="py-4 px-6 text-gray-700 dark:text-gray-300 text-base">{{ item.quantity }}</td>
+                            <td class="py-4 px-6 text-gray-700 dark:text-gray-300 text-base">${{ item.price_at_purchase|floatformat:2 }}</td>
+                            <td class="py-4 px-6 text-gray-900 dark:text-gray-100 font-bold text-lg">${{ item.get_total|floatformat:2 }}</td> {# Bolder for item total #}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-gray-600 dark:text-gray-400 text-center text-xl mt-10">No items found for this order.</p>
+    {% endif %}
+
+    <div class="mt-16 text-center space-y-6 sm:space-y-0 sm:space-x-8 flex flex-col sm:flex-row justify-center animate-fadeIn delay-600">
+        <a href="{% url 'generate_invoice_pdf' order.id %}" class="inline-flex items-center px-10 py-4 border-2 border-amber-600 dark:border-amber-500 text-lg font-bold rounded-lg shadow-md text-amber-600 dark:text-amber-400 bg-gray-50 dark:bg-gray-800 hover:bg-amber-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-400 transition ease-in-out duration-300 transform hover:scale-105">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            DOWNLOAD INVOICE
+        </a>
+
+        <a href="{% url 'user_order_history' %}" class="inline-flex items-center px-10 py-4 border-2 border-transparent text-lg font-bold rounded-lg shadow-md text-white bg-blue-700 hover:bg-blue-800 dark:bg-blue-800 dark:hover:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition ease-in-out duration-300 transform hover:scale-105 mt-4 sm:mt-0">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0z"></path></svg>
+            ORDER HISTORY
+        </a>
+    </div>
+</div>
+{% endblock %}

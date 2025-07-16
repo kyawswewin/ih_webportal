@@ -1,0 +1,95 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Order #{{ order.order_number }}{% endblock %}
+{% block page_title %}Order Details: #{{ order.order_number }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-lg shadow-md col-span-2">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Order Information</h2>
+        <p><strong>Order Number:</strong> {{ order.order_number }}</p>
+        <p><strong>Customer:</strong> {% if order.user %}<a href="{% url 'staff_customer_detail' order.user.pk %}" class="text-blue-600 hover:underline">{{ order.user.username }}</a>{% else %}{{ order.customer_name }} (Guest){% endif %}</p>
+        <p><strong>Customer Name:</strong> {{ order.customer_name }}</p>
+        <p><strong>Customer Address:</strong> {{ order.customer_address }}</p>
+        <p><strong>Customer Phone:</strong> {{ order.customer_phone }}</p>
+        <p><strong>Order Date:</strong> {{ order.created_at|date:"M d, Y H:i" }}</p>
+        <p><strong>Last Updated:</strong> {{ order.updated_at|date:"M d, Y H:i" }}</p>
+        <p><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+        <p class="mt-4 text-lg font-bold"><strong>Total Amount:</strong> ${{ order.total_amount|floatformat:2 }}</p>
+
+        <h3 class="text-lg font-bold mt-6 mb-3 text-gray-800">Order Items</h3>
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full bg-white">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="py-2 px-3 text-left text-sm font-semibold text-gray-600">Image</th>
+                        <th class="py-2 px-3 text-left text-sm font-semibold text-gray-600">Item</th>
+                        <th class="py-2 px-3 text-left text-sm font-semibold text-gray-600">Qty</th>
+                        <th class="py-2 px-3 text-right text-sm font-semibold text-gray-600">Unit Price</th>
+                        <th class="py-2 px-3 text-right text-sm font-semibold text-gray-600">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in order_items %}
+                    <tr class="{% cycle 'bg-white' 'bg-gray-50' %} border-b border-gray-100">
+                        <td class="py-2 px-4">
+                            {% if item.furniture.image %}
+                                <img src="{{ item.furniture.image.url }}" alt="{{ item.furniture.name }}" class="w-16 h-16 object-cover rounded">
+                            {% else %}
+                                <div class="w-16 h-16 bg-gray-200 flex items-center justify-center text-xs text-gray-500 rounded">No Image</div>
+                            {% endif %}
+                        </td>
+                        <td class="py-2 px-3">{{ item.furniture.name }} ({{ item.furniture.item_code }})</td>
+                        <td class="py-2 px-3">{{ item.quantity }}</td>
+                        <td class="py-2 px-3 text-right">${{ item.price_at_purchase|floatformat:2 }}</td>
+                        <td class="py-2 px-3 text-right">${{ item.get_total|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-4 px-3 text-center text-gray-500">No items in this order.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Update Order Status</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="status" class="block text-gray-700 text-sm font-bold mb-2">Order Status:</label>
+                <select name="status" id="status" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    {% for value, label in status_choices %}
+                        <option value="{{ value }}" {% if order.status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-6">
+                <label for="payment_status" class="block text-gray-700 text-sm font-bold mb-2">Payment Status:</label>
+                <select name="payment_status" id="payment_status" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    {% for value, label in payment_status_choices %}
+                        <option value="{{ value }}" {% if order.payment_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" name="update_status" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md mr-2">
+                Update Order
+            </button>
+        </form>
+
+        <h3 class="text-xl font-bold mt-8 mb-4 text-gray-800">Order Actions</h3>
+        <form method="POST" onsubmit="return confirm('Are you sure you want to cancel this order? This action cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit" name="cancel_order" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md"
+                    {% if order.status == 'Delivered' or order.status == 'Cancelled' %}disabled title="Cannot cancel a delivered or already cancelled order"{% endif %}>
+                Cancel Order
+            </button>
+        </form>
+         <a href="{% url 'generate_invoice_pdf' order.id %}" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md mt-4 inline-block">
+            Download Invoice
+        </a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Confirm Category Delete{% endblock %}
+{% block page_title %}Delete: {{ category.name }}{% endblock %}
+
+{% block content %}
+<div class="bg-white p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-2xl font-bold text-red-700 mb-4">Confirm Deletion</h2>
+    
+    <p class="text-gray-700 text-lg mb-6">
+        Are you sure you want to delete the category: 
+        <span class="font-semibold text-gray-900">"{{ category.name }}"</span>?
+    </p>
+
+    <p class="text-sm text-gray-600 mb-6">
+        This action cannot be undone. All furniture items directly associated with this category
+        will have their category set to `NULL` (if your `ForeignKey` is `on_delete=models.SET_NULL`).
+        If this category has children, they will become top-level categories.
+    </p>
+
+    {# The form's action points back to the staff_category_delete URL with the category's primary key #}
+    <form method="post" action="{% url 'staff_category_delete' category.pk %}">
+        {% csrf_token %}
+        <div class="flex items-center space-x-4">
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                Yes, Delete
+            </button>
+            <a href="{% url 'staff_category_list' %}" class="text-gray-600 hover:text-gray-900 text-sm font-medium">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

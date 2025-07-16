@@ -1,0 +1,95 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+{% block page_title %}Dashboard Overview{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+    <div class="bg-blue-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-blue-800">Total Orders</h3>
+        <p class="text-4xl font-bold text-blue-900">{{ total_orders }}</p>
+    </div>
+    <div class="bg-yellow-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-yellow-800">Pending Orders</h3>
+        <p class="text-4xl font-bold text-yellow-900">{{ pending_orders }}</p>
+    </div>
+    <div class="bg-green-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-green-800">Delivered Today</h3>
+        <p class="text-4xl font-bold text-green-900">{{ delivered_orders_today }}</p>
+    </div>
+    <div class="bg-purple-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-purple-800">Total Customers</h3>
+        <p class="text-4xl font-bold text-purple-900">{{ total_customers }}</p>
+    </div>
+    <div class="bg-red-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-red-800">Total Furniture Items</h3>
+        <p class="text-4xl font-bold text-red-900">{{ total_furniture_items }}</p>
+    </div>
+    <div class="bg-indigo-100 p-6 rounded-lg shadow-md text-center">
+        <h3 class="text-lg font-semibold text-indigo-800">Total Categories</h3>
+        <p class="text-4xl font-bold text-indigo-900">{{ total_categories }}</p>
+        <a href="{% url 'staff_category_list' %}" class="mt-4 inline-block text-indigo-600 hover:text-indigo-800 text-sm font-medium">Manage Categories &rarr;</a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Recent Orders</h2>
+        <ul class="divide-y divide-gray-200">
+            {% for order in recent_orders %}
+            <li class="py-3 flex justify-between items-center">
+                <a href="{% url 'staff_order_detail' order.id %}" class="text-blue-600 hover:underline">
+                    Order #{{ order.order_number }} - {{ order.customer_name }}
+                </a>
+                <span class="text-sm text-gray-600">{{ order.created_at|date:"M d, Y H:i" }}</span>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                    {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                    {% elif order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                    {% elif order.status == 'Cancelled' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ order.get_status_display }}
+                </span>
+            </li>
+            {% empty %}
+            <li class="py-3 text-gray-500">No recent orders.</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Recent Membership Changes</h2>
+        <ul class="divide-y divide-gray-200">
+            {% for log in recent_membership_changes %}
+            <li class="py-3">
+                <span class="font-semibold text-gray-700">{{ log.user.username }}</span> changed from
+                <span class="text-sm px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">{{ log.old_level }}</span> to
+                <span class="text-sm px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">{{ log.new_level }}</span>
+                on <span class="text-xs text-gray-500">{{ log.changed_at|date:"M d, Y" }}</span>
+            </li>
+            {% empty %}
+            <li class="py-3 text-gray-500">No recent membership changes.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Recent Category Updates</h2>
+        <ul class="divide-y divide-gray-200">
+            {% for category_log in recent_category_logs %}
+            <li class="py-3">
+                <span class="font-semibold text-gray-700">{{ category_log.category.name }}</span> was 
+                <span class="text-sm px-2 py-0.5 rounded-full 
+                    {% if category_log.action == 'created' %}bg-green-100 text-green-800
+                    {% elif category_log.action == 'updated' %}bg-yellow-100 text-yellow-800
+                    {% elif category_log.action == 'deleted' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ category_log.action }}
+                </span> by <span class="text-gray-600">{{ category_log.changed_by.username }}</span>
+                on <span class="text-xs text-gray-500">{{ category_log.timestamp|date:"M d, Y" }}</span>
+            </li>
+            {% empty %}
+            <li class="py-3 text-gray-500">No recent category updates.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Wardrobe #{{ wardrobe.id }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10">
+  <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-8 text-center">Wardrobe Preview</h2>
+
+  <div class="grid md:grid-cols-2 gap-10">
+
+    <!-- SVG Preview -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-100 mb-4">Visual Preview</h3>
+      <div class="w-full h-96 flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-md">
+        <svg width="300" height="350" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
+          <!-- Outer rectangle for wardrobe -->
+          <rect x="20" y="20" width="260" height="310" rx="10" ry="10"
+                fill="{% if wardrobe.material.texture_image %}url(#texture){% else %}#d1d5db{% endif %}" 
+                stroke="#4b5563" stroke-width="2" />
+          <!-- Doors split -->
+          <line x1="150" y1="20" x2="150" y2="330" stroke="#4b5563" stroke-width="2" />
+          <!-- Handles -->
+          <circle cx="130" cy="175" r="5" fill="#4b5563"/>
+          <circle cx="170" cy="175" r="5" fill="#4b5563"/>
+
+          {% if wardrobe.material.texture_image %}
+          <defs>
+            <pattern id="texture" patternUnits="userSpaceOnUse" width="300" height="350">
+              <image href="{{ wardrobe.material.texture_image.url }}" x="0" y="0" width="300" height="350" />
+            </pattern>
+          </defs>
+          {% endif %}
+        </svg>
+      </div>
+    </div>
+
+    <!-- Details Section -->
+    <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+      <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-100 mb-4">Details</h3>
+      <ul class="space-y-3 text-gray-700 dark:text-gray-300 text-lg">
+        <li><strong>Material:</strong> {{ wardrobe.material.name }}</li>
+        <li><strong>Width:</strong> {{ wardrobe.width }} ft</li>
+        <li><strong>Height:</strong> {{ wardrobe.height }} ft</li>
+        <li><strong>Depth:</strong> {{ wardrobe.depth }} ft</li>
+        <li><strong>Estimated Cost:</strong>
+          <span class="text-amber-700 dark:text-amber-400 font-bold">
+            ${{ wardrobe.estimated_cost }}
+          </span>
+        </li>
+        <li><strong>Created:</strong> {{ wardrobe.created_at|date:"F j, Y, P" }}</li>
+      </ul>
+      <div class="mt-6">
+        <a href="{% url 'create_wardrobe' %}"
+           class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition">
+          Create Another Wardrobe
+        </a>
+      </div>
+      <div class="mt-6">
+        <a href="{% url 'wardrobe_3d_view' wardrobe.id %}"
+           class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg shadow transition">
+          Make 3D
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

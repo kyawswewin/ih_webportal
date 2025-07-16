@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% block title %}3D Wardrobe View{% endblock %}
+
+{% block extra_css %}
+<style>
+  #wardrobe3d {
+    width: 100%;
+    height: 500px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .dark #wardrobe3d {
+    background-color: #333;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-10">
+  <h2 class="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-200">
+    3D Visualization of Your Wardrobe
+  </h2>
+  <div id="wardrobe3d"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  // Django context variables, safe float parsing
+  const wardrobeWidth = parseFloat("{{ wardrobe.width|floatformat:'2' }}") || 10;
+  const wardrobeHeight = parseFloat("{{ wardrobe.height|floatformat:'2' }}") || 20;
+  const wardrobeDepth = parseFloat("{{ wardrobe.depth|floatformat:'2' }}") || 5;
+  const shelfCount = parseInt("{{ wardrobe.shelf_count|default:3 }}") || 3;
+  const textureURL = "{{ wardrobe.material.texture.url }}";
+
+  const container = document.getElementById('wardrobe3d');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0);
+
+  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 1000);
+  camera.position.set(wardrobeWidth * 1.5, wardrobeHeight * 1.2, wardrobeDepth * 2.5);
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2;
+
+  // Load texture
+  const textureLoader = new THREE.TextureLoader();
+  const woodTexture = textureLoader.load(textureURL, () => {
+    renderer.render(scene, camera);
+  });
+
+  woodTexture.wrapS = THREE.RepeatWrapping;
+  woodTexture.wrapT = THREE.RepeatWrapping;
+  woodTexture.repeat.set(wardrobeWidth / 2, wardrobeHeight / 2);
+
+  // Materials
+  const outerMaterial = new THREE.MeshStandardMaterial({
+    map: woodTexture,
+    metalness: 0.1,
+    roughness: 0.8,
+    transparent: true,
+    opacity: 1,
+    side: THREE.DoubleSide,
+  });
+
+  // Outer wardrobe box
+  const outerGeometry = new THREE.BoxGeometry(wardrobeWidth, wardrobeHeight, wardrobeDepth);
+  const outerBox = new THREE.Mesh(outerGeometry, outerMaterial);
+  scene.add(outerBox);
+
+  // Edges for definition
+  const edges = new THREE.EdgesGeometry(outerGeometry);
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x4B2C0F, linewidth: 2 });
+  const wireframe = new THREE.LineSegments(edges, lineMaterial);
+  outerBox.add(wireframe);
+
+  // Shelves
+  const shelfThickness = 0.2;
+  const shelfMaterial = new THREE.MeshStandardMaterial({
+    color: 0xA0522D,
+    metalness: 0.1,
+    roughness: 0.7,
+  });
+
+  if (shelfCount > 0) {
+    const shelfSpacing = wardrobeHeight / (shelfCount + 1);
+    for (let i = 1; i <= shelfCount; i++) {
+      const yPos = -wardrobeHeight / 2 + shelfSpacing * i;
+      const shelfGeometry = new THREE.BoxGeometry(wardrobeWidth * 0.9, shelfThickness, wardrobeDepth * 0.9);
+      const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+      shelf.position.set(0, yPos, 0);
+      scene.add(shelf);
+    }
+  }
+
+  // Vertical dividers
+  const dividerCount = 2;
+  const dividerThickness = 0.2;
+  const dividerMaterial = new THREE.MeshStandardMaterial({
+    color: 0xA0522D,
+    metalness: 0.1,
+    roughness: 0.7,
+  });
+
+  const effectiveDividerHeight = wardrobeHeight - shelfThickness * 2;
+  const effectiveDividerDepth = wardrobeDepth - shelfThickness * 2;
+
+  for (let i = 1; i <= dividerCount; i++) {
+    const xPos = -wardrobeWidth / 2 + (wardrobeWidth / (dividerCount + 1)) * i;
+    const dividerGeometry = new THREE.BoxGeometry(dividerThickness, effectiveDividerHeight, effectiveDividerDepth);
+    const divider = new THREE.Mesh(dividerGeometry, dividerMaterial);
+    divider.position.set(xPos, 0, 0);
+    scene.add(divider);
+  }
+
+  // Lighting
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  directionalLight.position.set(5, 10, 7).normalize();
+  scene.add(directionalLight);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+  scene.add(ambientLight);
+
+  // Animate
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  // Handle resize
+  window.addEventListener('resize', () => {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  });
+</script>
+{% endblock %}

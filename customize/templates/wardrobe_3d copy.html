@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% block title %}3D Wardrobe View @ {% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Add any specific styles for the 3D view container if needed */
+    #wardrobe3d {
+        /* This ensures the container takes up space even before JS loads */
+        background-color: #e0e0e0; /* Light gray placeholder background */
+        border-radius: 12px;
+        overflow: hidden; /* Ensures renderer doesn't spill over */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1); /* Subtle shadow */
+    }
+    .dark #wardrobe3d {
+        background-color: #333; /* Darker placeholder in dark mode */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-10">
+    <h2 class="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-200">
+        3D Visualization of Your Wardrobe
+    </h2>
+    <div id="wardrobe3d" style="width: 100%; height: 500px;"></div>
+</div>
+
+{# --- START: extra_js block --- #}
+{% block extra_js %}
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+    }
+  }
+</script>
+{% endblock %}
+<script type="module">
+    import * as THREE from 'three'; // Now resolves via import map
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js'; // Now resolves via import map
+
+    // Dimensions from Django context
+    // Ensure these values are safe and will always be valid numbers
+    const wardrobeWidth = parseFloat("{{ wardrobe.width|floatformat:'2' }}") || 10; // Default if not found or invalid
+    const wardrobeHeight = parseFloat("{{ wardrobe.height|floatformat:'2' }}") || 20; // Default if not found or invalid
+    const wardrobeDepth = parseFloat("{{ wardrobe.depth|floatformat:'2' }}") || 5; // Default if not found or invalid
+    const shelfCount = parseInt("{{ wardrobe.shelf_count|default:3 }}");
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xf0f0f0); // Light background
+
+    // Adjust camera position for better initial view, relative to dimensions
+    const camera = new THREE.PerspectiveCamera(45, window.innerWidth / (window.innerHeight * 0.7), 1, 1000);
+    camera.position.set(wardrobeWidth * 1.5, wardrobeHeight * 1.2, wardrobeDepth * 2.5); // More dynamic positioning
+    camera.lookAt(0, 0, 0);
+
+    const container = document.getElementById("wardrobe3d");
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(container.clientWidth, 500); // Maintain fixed height for consistency
+    renderer.setPixelRatio(window.devicePixelRatio); // For sharper rendering on high-DPI screens
+    container.appendChild(renderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05; // Smooth damping
+    controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below ground
+
+    // Lighting
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 10, 7).normalize(); // Stronger, normalized light
+    scene.add(directionalLight);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4); // Softer ambient light
+    scene.add(ambientLight);
+
+    // --- Wardrobe Construction ---
+
+    // Outer Box (Main Wardrobe Structure - partially transparent)
+    const outerGeometry = new THREE.BoxGeometry(wardrobeWidth, wardrobeHeight, wardrobeDepth);
+    const outerMaterial = new THREE.MeshStandardMaterial({
+        color: 0x8B4513, // SaddleBrown
+        metalness: 0.1, // Less metallic, more wood-like
+        roughness: 0.8, // Rougher surface
+        opacity: 0.7, // More transparent to see inside
+        transparent: true,
+        side: THREE.FrontSide, // Render only front faces for better performance if interior isn't fully enclosed
+    });
+    const outerBox = new THREE.Mesh(outerGeometry, outerMaterial);
+    scene.add(outerBox);
+
+    // Edges for a more defined look
+    const edges = new THREE.EdgesGeometry(outerGeometry);
+    const lineMaterial = new THREE.LineBasicMaterial({ color: 0x4B2C0F, linewidth: 2 }); // Darker brown for edges
+    const wireframe = new THREE.LineSegments(edges, lineMaterial);
+    outerBox.add(wireframe); // Add wireframe as a child of the box
+
+    // Shelves
+    const shelfThickness = 0.2; // Thinner shelves
+    const shelfMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D, metalness: 0.1, roughness: 0.7 }); // Sienna
+
+    if (shelfCount > 0) { // Only add shelves if shelfCount is positive
+        const shelfSpacing = wardrobeHeight / (shelfCount + 1);
+        for (let i = 1; i <= shelfCount; i++) {
+            const yPos = -wardrobeHeight / 2 + shelfSpacing * i;
+            const shelfGeometry = new THREE.BoxGeometry(wardrobeWidth * 0.9, shelfThickness, wardrobeDepth * 0.9); // Slightly smaller than inner dimensions
+            const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+            shelf.position.set(0, yPos, 0);
+            scene.add(shelf);
+        }
+    }
+
+
+    // Dividers (Vertical)
+    const dividerCount = 2; // Keep 2 dividers as per your original code
+    const dividerThickness = 0.2; // Thinner dividers
+    const dividerMaterial = new THREE.MeshStandardMaterial({ color: 0xA0522D, metalness: 0.1, roughness: 0.7 }); // Sienna
+
+    // Calculate effective height for dividers to respect top/bottom of wardrobe interior
+    const effectiveDividerHeight = wardrobeHeight - (shelfThickness * 2); // Account for top/bottom thickness
+    const effectiveDividerDepth = wardrobeDepth - (shelfThickness * 2);
+
+    for (let i = 1; i <= dividerCount; i++) {
+        const xPos = -wardrobeWidth / 2 + (wardrobeWidth / (dividerCount + 1)) * i;
+        const dividerGeometry = new THREE.BoxGeometry(dividerThickness, effectiveDividerHeight, effectiveDividerDepth);
+        const divider = new THREE.Mesh(dividerGeometry, dividerMaterial);
+        divider.position.set(xPos, 0, 0);
+        scene.add(divider);
+    }
+
+
+    // Animation loop
+    function animate() {
+        requestAnimationFrame(animate);
+        controls.update(); // Only required if controls.enableDamping or controls.autoRotate are set to true
+        renderer.render(scene, camera);
+    }
+    animate();
+
+    // Handle window resizing
+    window.addEventListener('resize', () => {
+        camera.aspect = container.clientWidth / container.clientHeight; // Make height dynamic too
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight); // Adjust renderer height dynamically
+    });
+
+    // Initial render for correct sizing
+    window.dispatchEvent(new Event('resize'));
+</script>
+{% endblock %}

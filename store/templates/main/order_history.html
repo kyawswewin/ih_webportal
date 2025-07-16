@@ -1,0 +1,75 @@
+{% extends 'main/base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-12 animate-fadeIn font-serif">
+    <h2 class="text-5xl font-extrabold text-center mb-14 text-gray-900 dark:text-gray-100 tracking-tight leading-tight">
+        Your <span class="text-gold-700 dark:text-gold-300">Elegant</span> Order History
+    </h2>
+
+    {% if orders %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for order in orders %}
+                <div class="bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border border-gold-200 dark:border-gold-600 rounded-3xl p-6 shadow-3xl hover:shadow-4xl transition duration-300 ease-in-out">
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">
+                        Order <span class="text-gold-700 dark:text-gold-300">#{{ order.order_number }}</span>
+                    </h3>
+                    <div class="space-y-2 text-gray-700 dark:text-gray-300 text-base font-medium">
+                        <p><span class="text-gray-800 dark:text-gray-200">📅 Date:</span> {{ order.created_at|date:"M d, Y H:i" }}</p>
+                        <p>
+                            <span class="text-gray-800 dark:text-gray-200">📦 Status:</span>
+                            <span class="font-bold
+                                {% if order.status == 'Delivered' %}text-green-600 dark:text-green-400
+                                {% elif order.status == 'Cancelled' %}text-red-600 dark:text-red-400
+                                {% else %}text-blue-600 dark:text-blue-400{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </p>
+                        <p><span class="text-gray-800 dark:text-gray-200">💰 Total:</span>
+                            <span class="text-2xl font-extrabold text-gold-800 dark:text-gold-300">${{ order.total_amount|floatformat:2 }}</span>
+                        </p>
+                    </div>
+                    <div class="mt-6">
+                        <a href="{% url 'order_detail' order.id %}" class="inline-flex items-center justify-center px-6 py-2.5 text-base font-semibold rounded-full bg-gray-100 from-gold-600 to-amber-700 text-white hover:from-gold-700 hover:to-amber-800 focus:outline-none focus:ring-4 focus:ring-gold-500 dark:focus:ring-gold-600 shadow-xl transition-all duration-300 ease-in-out transform hover:scale-105">
+                            View Details
+                            <svg class="ml-2 -mr-1 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-16 px-6 bg-gray-50 dark:bg-gray-800 rounded-3xl shadow-inner border border-gold-200 dark:border-gold-600">
+            <p class="text-2xl text-gray-800 dark:text-gray-300 mb-8">
+                You haven’t placed any orders yet. Time to indulge in refined luxury!
+            </p>
+            <a href="{% url 'furniture_list' %}" class="inline-flex items-center px-8 py-4 text-lg font-semibold rounded-full bg-gradient-to-r from-gold-600 to-amber-700 text-white hover:from-gold-700 hover:to-amber-800 focus:outline-none focus:ring-4 focus:ring-gold-500 dark:focus:ring-gold-600 shadow-xl transition duration-300 transform hover:scale-105">
+                Start Browsing
+                <svg class="ml-3 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    .text-gold-300 { color: #FFD700; }
+    .text-gold-600 { color: #DAA520; }
+    .text-gold-700 { color: #B8860B; }
+    .text-gold-800 { color: #8B6914; }
+    .bg-gold-50 { background-color: #FFFACD; }
+    .border-gold-200 { border-color: #FFD700; }
+    .border-gold-600 { border-color: #B8860B; }
+    .from-gold-600 { background-color: #DAA520; }
+    .to-amber-700 { background-color: #D4AF37; }
+    .hover\:from-gold-700:hover { background-color: #B8860B; }
+    .hover\:to-amber-800:hover { background-color: #A67C00; }
+    .focus\:ring-gold-500:focus { --tw-ring-color: #FFD700; }
+    .dark\:focus\:ring-gold-600:focus { --tw-ring-color: #B8860B; }
+    .shadow-3xl { box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.25); }
+    .shadow-4xl { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35); }
+    .rounded-3xl { border-radius: 1.5rem; }
+    .font-serif { font-family: 'Playfair Display', serif; }
+</style>
+{% endblock %}

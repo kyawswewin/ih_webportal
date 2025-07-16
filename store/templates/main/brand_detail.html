@@ -1,0 +1,216 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<style>
+    .brand-hero {
+        background-color: #f0f4f8; /* Light blue-gray for the hero section */
+        padding: 2rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 2rem;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .dark .brand-hero {
+        background-color: #1a202c; /* Darker background for hero in dark mode */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+    .brand-hero-logo {
+        max-width: 150px;
+        height: auto;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        padding: 5px;
+        background-color: white;
+    }
+    .dark .brand-hero-logo {
+        border-color: #4a5568;
+        background-color: #2d3748;
+    }
+    .brand-description {
+        line-height: 1.6;
+        color: #4a5568; /* Gray-700 */
+    }
+    .dark .brand-description {
+        color: #a0aec0; /* Gray-400 */
+    }
+
+    .swiper-button-next,
+    .swiper-button-prev {
+        color: #1e3a8a; /* Tailwind blue-800 */
+        top: 30%;
+    }
+
+    .swiper-button-next:hover,
+    .swiper-button-prev:hover {
+        color: #2563eb; /* Tailwind blue-600 */
+    }
+
+    /* Custom scrollbar for category sidebar (optional, but nice for long lists) */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1; /* Light grey track */
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1; /* Tailwind gray-300 thumb */
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; /* Tailwind gray-400 on hover */
+    }
+    /* For Firefox */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f1f1;
+    }
+
+    /* Brand Layout Specific Styles (copy from furniture_list) */
+    .brand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Adjust minmax as needed */
+        gap: 10px;
+    }
+    .brand-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px;
+        border: 1px solid #e2e8f0; /* Tailwind gray-200 */
+        border-radius: 8px;
+        background-color: #f8fafc; /* Tailwind gray-50 */
+        text-align: center;
+        transition: all 0.2s ease-in-out;
+    }
+    .dark .brand-card {
+        border-color: #4a5568; /* Tailwind gray-700 */
+        background-color: #2d3748; /* Tailwind gray-800 */
+    }
+    .brand-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .dark .brand-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .brand-logo {
+        max-width: 60px;
+        max-height: 40px;
+        height: auto;
+        margin-bottom: 5px;
+        object-fit: contain;
+    }
+    .brand-card p {
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 500; /* font-medium */
+        color: #475569; /* Tailwind gray-600 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dark .brand-card p {
+        color: #cbd5e1; /* Tailwind gray-300 */
+    }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+
+    <div class="flex flex-col lg:flex-row gap-8">
+
+        <aside class="lg:w-1/4 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sticky top-20 self-start">
+            <h2 class="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-400">Categories</h2>
+            <div class="max-h-[calc(100vh-15rem)] overflow-y-auto custom-scrollbar pr-2">
+                <ul class="space-y-1">
+                    <li>
+                        <a href="{% url 'furniture_list' %}" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700 transition duration-200 ease-in-out">
+                            <span class="mr-2 text-gray-500 dark:text-gray-400">
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            </span>
+                            All Categories
+                        </a>
+                    </li>
+                    {% for cat in categories %}
+                        {% include 'main/_category_subtree.html' with category=cat %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-400">Brands</h2>
+                <div class="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                    <div class="brand-grid">
+                        {% for b in brands %} {# Using 'b' to avoid conflict with 'brand' variable for the current page's brand #}
+                            <a href="{% url 'brand_detail' b.slug %}" class="brand-card {% if b == brand %} bg-blue-200 dark:bg-blue-800 font-semibold text-blue-800 dark:text-blue-200 shadow-inner {% endif %}">
+                                {% if b.logo %}
+                                    <img src="{{ b.logo.url }}" alt="{{ b.name }} Logo" class="brand-logo">
+                                {% else %}
+                                    <span class="brand-logo flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs">No Logo</span>
+                                {% endif %}
+                                <p>{{ b.name }}</p>
+                            </a>
+                        {% empty %}
+                            <p class="text-gray-500 dark:text-gray-400 text-sm col-span-full">No brands found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="lg:w-3/4 space-y-8">
+            <div class="brand-hero text-gray-800 dark:text-gray-200">
+                {% if brand.logo %}
+                    <img src="{{ brand.logo.url }}" alt="{{ brand.name }} Logo" class="brand-hero-logo">
+                {% else %}
+                    <div class="brand-hero-logo flex items-center justify-center text-gray-400 dark:text-gray-500 text-sm">No Logo</div>
+                {% endif %}
+                <div>
+                    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
+                        {{ brand.name }}
+                    </h1>
+                    {% if brand.description %}
+                        <p class="brand-description text-lg">{{ brand.description }}</p>
+                    {% else %}
+                        <p class="brand-description text-lg text-gray-500 dark:text-gray-400">No description available for this brand.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <section>
+                <h2 class="text-3xl font-serif font-bold mb-6 text-gray-800 dark:text-gray-200">
+                    {{ brand.name }} Collection
+                </h2>
+
+                {% if items %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {% for item in items %}
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transform transition hover:scale-105 hover:shadow-xl duration-300">
+                                {% if item.image %}
+                                    <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-48 object-cover">
+                                {% else %}
+                                    <div class="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">No Image</div>
+                                {% endif %}
+                                <div class="p-4">
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                                        <a href="{% url 'furniture_detail' item.pk %}" class="hover:text-blue-600 transition">{{ item.name }}</a>
+                                    </h3>
+                                    <p class="text-blue-600 dark:text-blue-400 font-bold mb-2">${{ item.price }}</p>
+                                    <form method="post" action="{% url 'add_to_cart' item.pk %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm">
+                                            Add to Cart
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 dark:text-gray-400">No furniture items found for {{ brand.name }}.</p>
+                {% endif %}
+            </section>
+        </main>
+    </div>
+</div>
+{% endblock %}

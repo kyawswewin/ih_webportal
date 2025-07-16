@@ -1,0 +1,287 @@
+{% extends 'main/base.html' %}
+
+{% block content %}
+<style>
+    /* Existing Swiper Button Styles */
+    .swiper-button-next,
+    .swiper-button-prev {
+        color: #1e3a8a; /* Tailwind blue-800 */
+        top: 30%;
+    }
+
+    .swiper-button-next:hover,
+    .swiper-button-prev:hover {
+        color: #2563eb; /* Tailwind blue-600 */
+    }
+
+    /* Custom scrollbar for category sidebar (optional, but nice for long lists) */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1; /* Light grey track */
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1; /* Tailwind gray-300 thumb */
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; /* Tailwind gray-400 on hover */
+    }
+    /* For Firefox */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f1f1;
+    }
+
+    /* Brand Layout Specific Styles */
+    .brand-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); /* Adjust minmax as needed */
+        gap: 10px;
+    }
+    .brand-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px;
+        border: 1px solid #e2e8f0; /* Tailwind gray-200 */
+        border-radius: 8px;
+        background-color: #f8fafc; /* Tailwind gray-50 */
+        text-align: center;
+        transition: all 0.2s ease-in-out;
+    }
+    .dark .brand-card {
+        border-color: #4a5568; /* Tailwind gray-700 */
+        background-color: #2d3748; /* Tailwind gray-800 */
+    }
+    .brand-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    .dark .brand-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    .brand-logo {
+        max-width: 60px;
+        max-height: 40px;
+        height: auto;
+        margin-bottom: 5px;
+        object-fit: contain;
+    }
+    .brand-card p {
+        font-size: 0.75rem; /* text-xs */
+        font-weight: 500; /* font-medium */
+        color: #475569; /* Tailwind gray-600 */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dark .brand-card p {
+        color: #cbd5e1; /* Tailwind gray-300 */
+    }
+</style>
+<div class="container mx-auto px-4 py-8">
+
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center">
+        Furniture Collection
+    </h1>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+
+        <aside class="lg:w-1/4 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 sticky top-20 self-start">
+            <h2 class="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-400">Categories</h2>
+            <div class="max-h-[calc(100vh-15rem)] overflow-y-auto custom-scrollbar pr-2">
+                <ul class="space-y-1">
+                    <li>
+                        <a href="{% url 'furniture_list' %}" class="block px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700 transition duration-200 ease-in-out
+                            {% if not selected_category_id %} bg-blue-200 dark:bg-blue-800 font-semibold text-blue-800 dark:text-blue-200 shadow-inner {% endif %}">
+                            <span class="mr-2 text-gray-500 dark:text-gray-400">
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                            </span>
+                            All Categories
+                        </a>
+                    </li>
+                    {# Only include _category_subtree.html; it handles the link and styling for each category #}
+                    {% for cat in categories %}
+                        {% include 'main/_category_subtree.html' with category=cat selected_category_id=selected_category_id is_root=True %}
+                    {% endfor %}
+                </ul>
+            </div>
+
+            {# Brand Section #}
+            <div class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h2 class="text-xl font-semibold mb-4 text-blue-700 dark:text-blue-400">Brands</h2>
+                <div class="max-h-[250px] overflow-y-auto custom-scrollbar pr-2">
+                    <div class="brand-grid">
+                        {% for brand in brands %}
+                            <a href="{% url 'brand_detail' brand.slug %}" class="brand-card">
+                                {% if brand.logo %}
+                                    <img src="{{ brand.logo.url }}" alt="{{ brand.name }} Logo" class="brand-logo">
+                                {% else %}
+                                    <span class="brand-logo flex items-center justify-center text-gray-400 dark:text-gray-500 text-xs">No Logo</span>
+                                {% endif %}
+                                <p>{{ brand.name }}</p>
+                            </a>
+                        {% empty %}
+                            <p class="text-gray-500 dark:text-gray-400 text-sm col-span-full">No brands found.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {# End Brand Section #}
+            
+
+        </aside>
+
+        <main class="lg:w-3/4 space-y-12">
+                <section>
+                <h2 class="text-3xl font-serif font-bold mb-6 text-gray-800 dark:text-gray-200">
+                    {% if selected_category %}
+                        {{ selected_category.name }} Collection
+                    {% else %}
+                        Better Choice, Better Living with <span class="text-blue-600 dark:text-blue-400">INHOUSE</span>
+                    {% endif %}
+                </h2>
+
+                {% if items %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for item in items %}
+                    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transform transition hover:scale-105 hover:shadow-xl duration-300">
+                        <!-- {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-48 object-cover">
+                        {% else %}
+                        <div class="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">No Image</div>
+                        {% endif %} -->
+                        {% if item.image %}
+                        <img src="{{ item.image.url }}"
+                            alt="{{ item.name }}"
+                            class="w-full h-60 object-cover"
+                            loading="lazy" {# Adds lazy loading for performance #}
+                            width="{{ item.image.width }}"  {# Helps prevent layout shift by telling browser image width #}
+                            height="{{ item.image.height }}" {# Helps prevent layout shift by telling browser image height #}
+                        >
+                        {% else %}
+                        <div class="w-full h-48 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400">No Image</div>
+                        {% endif %}
+                        <div class="p-4">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
+                                <a href="{% url 'furniture_detail' item.pk %}" class="hover:text-blue-600 transition">{{ item.name }}</a>
+                            </h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-bold mb-2">${{ item.price }}</p>
+                            <form method="post" action="{% url 'add_to_cart' item.pk %}">
+                                {% csrf_token %}
+                                <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition text-sm">
+                                    Add to Cart
+                                </button>
+                            </form>
+
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-500 dark:text-gray-400">No items found in this category.</p>
+                {% endif %}
+            </section>
+
+            <!-- <section class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-md">
+                <h2 class="text-xl font-bold mb-6 text-gray-800 dark:text-white">Trending Items</h2>
+
+                <div class="relative">
+                    <div class="swiper mySwiper">
+                        <div class="swiper-wrapper">
+                            {% for item in recommended_items %}
+                            <div class="swiper-slide bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition hover:scale-105 duration-300 w-[180px] border border-blue-100 dark:border-gray-700 relative">
+                                {% if item.image %}
+                                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="h-28 w-full object-cover">
+                                {% else %}
+                                <div class="h-28 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                                {% endif %}
+                                
+                                <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded shadow">
+                                    🔥 Trending
+                                </span>
+
+                                <div class="p-2">
+                                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate">{{ item.name }}</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.category.name }}</p>
+                                    <p class="text-blue-600 dark:text-blue-400 font-bold text-sm">${{ item.price }}</p>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-gray-500 px-4 dark:text-gray-400">No recommended items found.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="swiper-button-next text-gray-700 dark:text-gray-300"></div>
+                    <div class="swiper-button-prev text-gray-700 dark:text-gray-300"></div>
+                </div>
+            </section> -->
+            <section class="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-md">
+                <h2 class="text-xl font-bold mb-6 text-gray-800 dark:text-white">Trending Items</h2>
+
+                <div class="relative">
+                    <div class="swiper mySwiper">
+                        <div class="swiper-wrapper">
+                            {% for item in recommended_items %}
+                            <a href="{% url 'furniture_detail' item.pk %}" class="swiper-slide bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition hover:scale-105 duration-300 w-[180px] border border-blue-100 dark:border-gray-700 relative group">
+                                {% if item.image %}
+                                <img src="{{ item.image.url }}" alt="{{ item.name }}" class="h-38 w-full object-cover">
+                                {% else %}
+                                <div class="h-38 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                                {% endif %}
+                                <span class="absolute top-2 left-2 bg-red-500 text-white text-xs font-semibold px-2 py-0.5 rounded shadow">
+                                    🔥 Trending
+                                </span>
+
+                                <div class="p-2">
+                                    <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 truncate group-hover:text-blue-600 transition">{{ item.name }}</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ item.category.name }}</p>
+                                    <p class="text-blue-600 dark:text-blue-400 font-bold text-sm">${{ item.price }}</p>
+                                </div>
+                            </a> 
+                            {% empty %}
+                            <p class="text-gray-500 px-4 dark:text-gray-400">No recommended items found.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="swiper-button-next text-gray-700 dark:text-gray-300"></div>
+                    <div class="swiper-button-prev text-gray-700 dark:text-gray-300"></div>
+                </div>
+            </section>
+            <section class="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-gray-800 dark:to-gray-900 rounded-xl p-6 shadow-md mt-8">
+                <h2 class="text-xl font-bold mb-6 text-gray-800 dark:text-white">Best Seller of the Month</h2>
+
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5">
+                    {% for item in featured_items %}
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transform transition hover:scale-105 hover:shadow-xl duration-300 relative border border-yellow-100 dark:border-gray-700">
+                        {% if item.image %}
+                        <img src="{{ item.image.url }}" alt="{{ item.name }}" class="w-full h-42 object-cover">
+                        {% else %}
+                        <div class="w-full h-42 bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-gray-400 text-sm">No Image</div>
+                        {% endif %}
+
+                        <span class="absolute top-2 right-2 bg-yellow-400 text-yellow-900 text-xs font-semibold px-2 py-0.5 rounded shadow">
+                            ⭐ Best Seller
+                        </span>
+
+                        <div class="p-3">
+                            <h3 class="text-sm font-semibold text-gray-800 dark:text-gray-100 mb-1 truncate">{{ item.name }}</h3>
+                            <p class="text-blue-600 dark:text-blue-400 font-semibold text-sm mb-2">${{ item.price }}</p>
+                            <a href="{% url 'furniture_detail' item.pk %}" class="inline-block px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition">
+                                View
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+            </section>
+        </main>
+    </div>
+</div>
+{% endblock %}

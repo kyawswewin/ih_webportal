@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Wardrobe Design Details{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12 md:py-16 lg:py-20 font-inter min-h-screen">
+    <div class="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 md:p-10 border border-gray-200 dark:border-gray-700 w-full max-w-4xl mx-auto">
+        <h2 class="text-4xl md:text-5xl font-extrabold text-gray-900 dark:text-white mb-8 text-center leading-tight">
+            Your Wardrobe Design
+        </h2>
+        <p class="text-lg text-gray-600 dark:text-gray-300 text-center mb-8">
+            Review the details and materials of your customized wardrobe.
+        </p>
+
+        <style>
+            /* Dynamic CSS for shelf color */
+            .shelf-color-display {
+                background-color: "{{ wardrobe.shelf_color_hex | default:'#D2B48C' }}";
+            }
+            /* You could define similar classes for body, door, handle materials if their colors were dynamic too */
+        </style>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
+            <div>
+                <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Design Specifications</h3>
+                <ul class="space-y-3 text-gray-700 dark:text-gray-300">
+                    <li><strong class="font-medium">Width:</strong> {{ wardrobe.width }} ft</li>
+                    <li><strong class="font-medium">Height:</strong> {{ wardrobe.height }} ft</li>
+                    <li><strong class="font-medium">Depth:</strong> {{ wardrobe.depth }} ft</li>
+                    <li><strong class="font-medium">Shelves:</strong> {{ wardrobe.shelf_count }}</li>
+                    <li><strong class="font-medium">Handles:</strong> {{ wardrobe.handle_count }}</li>
+                    <li><strong class="font-medium">Shelf Color:</strong> 
+                        <span class="inline-block w-6 h-6 rounded-full align-middle border border-gray-300 dark:border-gray-600 shelf-color-display"></span> 
+                        {{ wardrobe.shelf_color_hex }}
+                    </li>
+                    <li class="text-2xl font-bold mt-4">
+                        <strong class="font-medium">Estimated Cost:</strong> ${{ wardrobe.estimated_cost|floatformat:2 }}
+                    </li>
+                </ul>
+            </div>
+
+            <div>
+                <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Material Selections</h3>
+                <div class="space-y-6">
+
+                    <div class="material-section p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <h4 class="text-xl font-medium text-gray-800 dark:text-white mb-2">Body Material: {{ wardrobe.body_material.name }}</h4>
+                        {% if wardrobe.body_material.texture_body %}
+                            <p class="text-gray-600 dark:text-gray-300 mb-2">Selected Body Texture:</p>
+                            <img src="{{ wardrobe.body_material.texture_body.url }}" alt="{{ wardrobe.body_material.name }} Body Texture" class="w-full h-auto max-h-48 object-cover rounded-md shadow-sm border border-gray-200 dark:border-gray-600">
+                        {% else %}
+                            <p class="text-gray-600 dark:text-gray-300">No specific body texture selected for this material.</p>
+                        {% endif %}
+                        <p class="text-gray-600 dark:text-gray-300 mt-2">
+                            Base Color: 
+                            <span class="inline-block w-4 h-4 rounded-full align-middle border border-gray-300 dark:border-gray-600" style="background-color: {{ wardrobe.body_material.color_hex }};"></span> 
+                            {{ wardrobe.body_material.color_hex }}
+                        </p>
+                    </div>
+
+                    <div class="material-section p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <h4 class="text-xl font-medium text-gray-800 dark:text-white mb-2">Door Material: {{ wardrobe.door_material.name }}</h4>
+                        {% if wardrobe.door_material.texture_door %}
+                            <p class="text-gray-600 dark:text-gray-300 mb-2">Selected Door Texture:</p>
+                            <img src="{{ wardrobe.door_material.texture_door.url }}" alt="{{ wardrobe.door_material.name }} Door Texture" class="w-full h-auto max-h-48 object-cover rounded-md shadow-sm border border-gray-200 dark:border-gray-600">
+                        {% else %}
+                            <p class="text-gray-600 dark:text-gray-300">No specific door texture selected for this material.</p>
+                        {% endif %}
+                        <p class="text-gray-600 dark:text-gray-300 mt-2">
+                            Base Color: 
+                            <span class="inline-block w-4 h-4 rounded-full align-middle border border-gray-300 dark:border-gray-600" style="background-color: {{ wardrobe.door_material.color_hex }};"></span> 
+                            {{ wardrobe.door_material.color_hex }}
+                        </p>
+                    </div>
+
+                    <div class="material-section p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <h4 class="text-xl font-medium text-gray-800 dark:text-white mb-2">Handle Material: 
+                            {% if wardrobe.handle_material %}
+                                {{ wardrobe.handle_material.name }}
+                            {% else %}
+                                Not Selected
+                            {% endif %}
+                        </h4>
+                        {% if wardrobe.handle_material and wardrobe.handle_material.texture_handle %}
+                            <p class="text-gray-600 dark:text-gray-300 mb-2">Selected Handle Texture:</p>
+                            <img src="{{ wardrobe.handle_material.texture_handle.url }}" alt="{{ wardrobe.handle_material.name }} Handle Texture" class="w-full h-auto max-h-48 object-cover rounded-md shadow-sm border border-gray-200 dark:border-gray-600">
+                        {% else %}
+                            <p class="text-gray-600 dark:text-gray-300">No specific handle texture selected or material not chosen.</p>
+                        {% endif %}
+                        {% if wardrobe.handle_material %}
+                        <p class="text-gray-600 dark:text-gray-300 mt-2">
+                            Base Color: 
+                            <span class="inline-block w-4 h-4 rounded-full align-middle border border-gray-300 dark:border-gray-600" style="background-color: {{ wardrobe.handle_material.color_hex }};"></span> 
+                            {{ wardrobe.handle_material.color_hex }}
+                        </p>
+                        {% endif %}
+                    </div>
+
+                    <div class="material-section p-4 border rounded-lg bg-gray-50 dark:bg-gray-700">
+                        <h4 class="text-xl font-medium text-gray-800 dark:text-white mb-2">Shelf Material: 
+                            {% if wardrobe.shelf_material %}
+                                {{ wardrobe.shelf_material.name }}
+                            {% else %}
+                                Not Selected
+                            {% endif %}
+                        </h4>
+                        {% if wardrobe.shelf_material %}
+                        <p class="text-gray-600 dark:text-gray-300 mt-2">
+                            Base Color: 
+                            <span class="inline-block w-4 h-4 rounded-full align-middle border border-gray-300 dark:border-gray-600" style="background-color: {{ wardrobe.shelf_material.color_hex }};"></span> 
+                            {{ wardrobe.shelf_material.color_hex }}
+                        </p>
+                        {% else %}
+                        <p class="text-gray-600 dark:text-gray-300">No specific shelf material chosen.</p>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-10">
+            <a href="{% url 'create_wardrobe' %}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H16a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Design Another Wardrobe
+            </a>
+            {% if wardrobe.pk %}
+            <a href="{% url 'wardrobe_3d_view' pk=wardrobe.pk %}" class="inline-flex items-center ml-4 px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-150 ease-in-out dark:bg-blue-700 dark:text-white dark:hover:bg-blue-600">
+                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.555-4.555A2 2 0 0121 7.445V16a2 2 0 01-2 2H5a2 2 0 01-2-2V7.445a2 2 0 01.445-1.334L9 10m0 0l4.445-4.445a2 2 0 011.334-.445H19a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7.445a2 2 0 01.445-1.334L9 10z" />
+                </svg>
+                View in 3D
+            </a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

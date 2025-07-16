@@ -1,0 +1,54 @@
+{% extends 'main/base.html' %}
+{% load static %}
+{% block title %}Credentials - {% endblock %}
+
+{% block content %}
+
+{# Use the background_classes passed from the view #}
+<div class="max-w-md mx-auto mt-12 {{ background_classes }} rounded-2xl shadow-xl p-8 animate-fadeIn border-2">
+
+    <div class="text-center">
+        <h2 class="text-3xl font-bold text-amber-600 mb-4">Welcome, {{ request.user.username }}!</h2>
+        <p class="text-gray-500 text-sm">Here's your account info</p>
+    </div>
+
+    <div class="mt-6 space-y-4 text-gray-700 text-base">
+        <p><strong>Customer Code:</strong> {{ request.user.c_code }}</p>
+        <p><strong>Member Level:</strong> {{ request.user.member_level|default:"N/A" }}</p> {# Display member level #}
+        <p><strong>Amount:</strong> {{ request.user.amount|default:"0.00" }}</p> {# Display amount #}
+
+        <p><strong>Email:</strong> {{ request.user.email }}</p>
+        <p><strong>Phone:</strong> {{ request.user.phone}}</p>
+        <p><strong>NRC:</strong> {{ request.user.nrc }}</p>
+        <p><strong>Date of Birth:</strong> {{ request.user.dob }}</p>
+        <p><strong>Registered By:</strong> {{ request.user.createdby }}</p>
+    </div>
+
+    <form method="post" action="{% url 'logout' %}" class="mt-8">
+        {% csrf_token %}
+        <button
+            type="submit"
+            class="w-full py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition duration-300 shadow"
+        >
+            🔓 Logout
+        </button>
+    </form>
+</div>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fadeIn {
+        animation: fadeIn 0.7s ease-out;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'main/base.html' %}
+{% block title %}Categories{% endblock %}
+
+{% block content %}
+<style>
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1; 
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1; /* Tailwind gray-300 thumb */
+        border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; /* Tailwind gray-400 on hover */
+    }
+    /* For Firefox */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 #f1f1f1;
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-track {
+        background: #374151; /* Dark grey track */
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #4b5563; /* Darker gray-600 thumb */
+    }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #6b7280; /* Even darker gray-500 on hover */
+    }
+    .dark .custom-scrollbar {
+        scrollbar-color: #4b5563 #374151;
+    }
+</style>
+
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-8 text-center md:text-left">
+        Explore Categories
+    </h1>
+
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
+        {% if categories %}
+        <div class="max-h-[calc(100vh-15rem)] overflow-y-auto custom-scrollbar pr-2">
+            <ul class="space-y-1">
+                <li>
+                    <a href="{% url 'furniture_list' %}" class="flex items-center px-4 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-blue-100 dark:hover:bg-gray-700 transition duration-200 ease-in-out
+                        {% if not selected_category_id %} bg-blue-200 dark:bg-blue-800 font-semibold text-blue-800 dark:text-blue-200 shadow-inner {% endif %}">
+                        <span class="mr-3 text-gray-500 dark:text-gray-400">
+                            {# Icon for All Categories (e.g., a list icon) #}
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                        </span>
+                        <span class="text-lg">All Categories</span>
+                    </a>
+                </li>
+                {% for category in categories %}
+                    {% include 'main/_category_subtree.html' with category=category selected_category_id=selected_category_id is_root=True %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% else %}
+        <p class="text-gray-600 dark:text-gray-400 text-center py-10">No categories available to display.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

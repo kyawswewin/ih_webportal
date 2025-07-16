@@ -1,0 +1,133 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Manage Orders{% endblock %}
+{% block page_title %}Order Management{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <form method="GET" action="{% url 'staff_order_list' %}" class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-6 rounded-xl shadow-lg flex flex-col md:flex-row items-center gap-4">
+        <input type="text" name="q" placeholder="Search order number, customer name..."
+               value="{{ search_query|default_if_none:'' }}"
+               class="py-3 px-4 border border-blue-200 dark:border-blue-700 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 font-medium shadow-sm focus:ring-2 focus:ring-blue-400 focus:outline-none max-w-xs w-full">
+
+        <select name="status" class="py-3 px-4 border-2 border-blue-200 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-semibold shadow focus:ring-2 focus:ring-blue-400 focus:outline-none w-full md:w-auto">
+            <option value="">All Status</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="payment_status" class="py-3 px-4 border-2 border-blue-200 dark:border-blue-700 rounded-xl bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 font-semibold shadow focus:ring-2 focus:ring-blue-400 focus:outline-none w-full md:w-auto">
+            <option value="">All Payment Status</option>
+            {% for value, label in payment_status_choices %}
+            <option value="{{ value }}" {% if selected_payment_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+
+        <div class="flex gap-2 w-full md:w-auto justify-center">
+            <button type="submit" class="inline-flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-semibold py-0.5 px-3 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-green-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                Filters
+            </button>
+            <a href="{% url 'staff_order_list' %}" class="inline-flex items-center gap-2 bg-red-400 hover:bg-red-500 text-white font-semibold py-0.5 px-3 rounded-full shadow focus:outline-none focus:ring-2 focus:ring-red-300">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                Clear
+            </a>
+        </div>
+    </form>
+</div>
+{% if page_obj and page_obj.has_other_pages %}
+<nav class="flex justify-center mt-4">
+    <ul class="flex items-center space-x-1">
+        {% if page_obj.has_previous %}
+            <li>
+                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_status %}&payment_status={{ selected_payment_status }}{% endif %}"
+                   class="px-2 py-1 text-xs text-blue-600 border border-blue-300 rounded font-medium bg-white hover:bg-blue-50 hover:text-blue-700 transition-all duration-100 focus:outline-none">
+                    <span class="font-bold">&laquo;</span>
+                </a>
+            </li>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == 1 or num == page_obj.paginator.num_pages or num >= page_obj.number|add:'-1' and num <= page_obj.number|add:'1' %}
+                {% if page_obj.number == num %}
+                    <li>
+                        <span class="px-2 py-1 text-xs text-white bg-blue-600 border border-blue-600 rounded font-bold">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li>
+                        <a href="?page={{ num }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_status %}&payment_status={{ selected_payment_status }}{% endif %}"
+                           class="px-2 py-1 text-xs text-blue-700 border border-blue-200 rounded font-medium bg-white hover:bg-blue-50 hover:text-blue-900 transition-all duration-100 focus:outline-none">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% elif num == page_obj.number|add:'-2' or num == page_obj.number|add:'2' %}
+                <li><span class="px-1 py-1 text-xs text-gray-400 bg-white border border-gray-200 rounded">...</span></li>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <li>
+                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query }}{% endif %}{% if selected_status %}&status={{ selected_status }}{% endif %}{% if selected_payment_status %}&payment_status={{ selected_payment_status }}{% endif %}"
+                   class="px-2 py-1 text-xs text-blue-600 border border-blue-300 rounded font-medium bg-white hover:bg-blue-50 hover:text-blue-700 transition-all duration-100 focus:outline-none">
+                    <span class="font-bold">&raquo;</span>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+<div class="overflow-x-auto rounded-lg shadow-md">
+    <table class="min-w-full bg-white border border-gray-200">
+        <thead class="bg-gray-200 text-gray-700">
+            <tr>
+                <th class="py-3 px-4 text-left">Order #</th>
+                <th class="py-3 px-4 text-left">Customer</th>
+                <th class="py-3 px-4 text-left">Total</th>
+                <th class="py-3 px-4 text-left">Status</th>
+                <th class="py-3 px-4 text-left">Payment</th>
+                <th class="py-3 px-4 text-left">Date</th>
+                <th class="py-3 px-4 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr class="{% cycle 'bg-white' 'bg-gray-50' %} border-b border-gray-200">
+                <td class="py-3 px-4"><a href="{% url 'staff_order_detail' order.id %}" class="text-blue-600 hover:underline">{{ order.order_number }}</a></td>
+                <td class="py-3 px-4">{{ order.customer_name }}</td>
+                <td class="py-3 px-4">${{ order.total_amount|floatformat:2 }}</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full
+                        {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                        {% elif order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order.status == 'Cancelled' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full
+                        {% if order.payment_status == 'Completed' %}bg-green-100 text-green-800
+                        {% elif order.payment_status == 'Pending' %}bg-yellow-100 text-yellow-800
+                        {% elif order.payment_status == 'Failed' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ order.get_payment_status_display }}
+                    </span>
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-600">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+                <td class="py-3 px-4">
+                    <a href="{% url 'staff_order_detail' order.id %}" class="text-indigo-600 hover:text-indigo-900 mr-2">View</a>
+                    <a href="{% url 'generate_invoice_pdf' order.id %}" class="text-purple-600 hover:text-purple-900">Invoice</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="py-4 px-4 text-center text-gray-500">No orders found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Confirm Delete{% endblock %}
+{% block page_title %}Delete Furniture Item{% endblock %}
+
+{% block content %}
+<div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg" role="alert">
+    <p class="font-bold">Are you sure?</p>
+    <p>You are about to delete the furniture item: <strong>"{{ furniture.name }}" ({{ furniture.item_code }})</strong>.</p>
+    <p class="mt-2">This action cannot be undone.</p>
+</div>
+
+<form method="POST" class="bg-white p-6 rounded-lg shadow-md max-w-md mx-auto">
+    {% csrf_token %}
+    <div class="flex justify-around items-center">
+        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md">
+            Yes, Delete
+        </button>
+        <a href="{% url 'staff_furniture_list' %}" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">
+            No, Cancel
+        </a>
+    </div>
+</form>
+{% endblock %}

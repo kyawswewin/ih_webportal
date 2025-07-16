@@ -1,0 +1,426 @@
+{% extends 'base.html' %}
+{% block title %}3D Wardrobe View{% endblock %}
+
+{% block extra_css %}
+<style>
+  #wardrobe3d {
+    width: 100%;
+    height: 500px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  }
+  .dark #wardrobe3d {
+    background-color: #333;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .control-buttons {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    justify-content: center; /* Center the buttons */
+  }
+  .control-buttons button {
+    flex: 1; /* Allow buttons to grow */
+    max-width: 150px; /* Limit max width for better appearance */
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  .control-buttons button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+  }
+  .control-buttons button.active {
+    border: 2px solid #3b82f6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+  }
+  .dark .control-buttons button.active {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 4px rgba(96, 165, 250, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-10">
+  <h2 class="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-gray-200">
+    3D Visualization of Your Wardrobe
+  </h2>
+  <div id="wardrobe3d"></div>
+
+  <div class="control-buttons">
+    <button type="button" id="exteriorViewBtn" class="bg-blue-500 text-white active">Exterior View</button>
+    <button type="button" id="interiorViewBtn" class="bg-purple-500 text-white">Interior View</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+  import * as THREE from 'three';
+  import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+  // Django context variables, safe float parsing
+  const wardrobeWidth = parseFloat("{{ wardrobe.width|floatformat:'2' }}") || 3;
+  const wardrobeHeight = parseFloat("{{ wardrobe.height|floatformat:'2' }}") || 6;
+  const wardrobeDepth = parseFloat("{{ wardrobe.depth|floatformat:'2' }}") || 2;
+  const shelfCount = parseInt("{{ wardrobe.shelf_count|default:3 }}") || 3;
+
+  // Material properties from Django context
+  // Use default filter to handle cases where texture_body.url or color_hex might be empty/None
+  const bodyTextureURL = "{{ wardrobe.body_material.texture_body.url|default:'' }}";
+  const bodyBaseColor = "{{ wardrobe.body_material.color_hex|default:'#8B4513' }}";
+
+  const doorTextureURL = "{{ wardrobe.door_material.texture_door.url|default:'' }}";
+  const doorBaseColor = "{{ wardrobe.door_material.color_hex|default:'#A0522D' }}";
+
+  // Check if accessory_material exists before accessing its properties
+  const handleTextureURL = "{% if wardrobe.accessory_material %}{{ wardrobe.accessory_material.accessory_handle.url|default:'' }}{% else %}{% endif %}";
+  const handleBaseColor = "{% if wardrobe.accessory_material %}{{ wardrobe.accessory_material.color_hex|default:'#808080' }}{% else %}#808080{% endif %}";
+
+  // Assuming shelf_color_hex is a direct field on WardrobeDesign if not from a separate material
+  const shelfColor = "{{ wardrobe.shelf_color_hex|default:'#D2B48C' }}"; 
+
+
+  // --- Scene Setup ---
+  const container = document.getElementById('wardrobe3d');
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0xf0f0f0); // Light background for the scene
+
+  const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+  camera.position.set(wardrobeWidth * 1.5, wardrobeHeight * 1.2, wardrobeDepth * 2.5); // Dynamic initial camera position
+  camera.lookAt(0, 0, 0);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.maxPolarAngle = Math.PI / 2; // Prevent camera from going below the ground
+
+  // --- Lighting ---
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+  directionalLight.position.set(5, 10, 7).normalize();
+  scene.add(directionalLight);
+
+  const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.3);
+  directionalLight2.position.set(-5, -10, -7).normalize();
+  scene.add(directionalLight2);
+
+  // --- Wardrobe Components ---
+  let wardrobeGroup = new THREE.Group(); // Group to hold all wardrobe parts
+  scene.add(wardrobeGroup);
+
+  let bodyMaterial, doorMaterial, shelfMaterial, handleMaterial;
+  const textureLoader = new THREE.TextureLoader(); // Initialize texture loader once
+
+  // Global references to parts for view toggling
+  let leftDoor, rightDoor, leftPanel, rightPanel, leftHandle, rightHandle;
+
+  // Function to create a rounded box geometry (for smoother edges)
+  function createRoundedBox(width, height, depth, radius = 0.1, segments = 8) {
+      const geometry = new THREE.BufferGeometry();
+      const shape = new THREE.Shape();
+      const x = width / 2;
+      const y = height / 2;
+
+      shape.moveTo(-x + radius, -y);
+      shape.lineTo(x - radius, -y);
+      shape.absarc(x - radius, -y + radius, radius, -Math.PI / 2, 0, false);
+      shape.lineTo(x, y - radius);
+      shape.absarc(x - radius, y - radius, radius, 0, Math.PI / 2, false);
+      shape.lineTo(-x + radius, y);
+      shape.absarc(-x + radius, y - radius, radius, Math.PI / 2, Math.PI, false);
+      shape.lineTo(-x, -y + radius);
+      shape.absarc(-x + radius, -y + radius, radius, Math.PI, Math.PI * 3 / 2, false);
+
+      const extrudeSettings = {
+          steps: 1,
+          depth: depth,
+          bevelEnabled: true,
+          bevelThickness: radius,
+          bevelSize: radius,
+          bevelOffset: 0,
+          bevelSegments: segments
+      };
+
+      const extrudeGeometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      extrudeGeometry.center(); // Center the geometry
+      return extrudeGeometry;
+  }
+
+  // --- Build Wardrobe Function ---
+  function buildWardrobe(isExteriorView) {
+      // Dispose of old geometries and materials to prevent memory leaks
+      while (wardrobeGroup.children.length > 0) {
+          const object = wardrobeGroup.children[0];
+          if (object.geometry) object.geometry.dispose();
+          if (object.material) {
+              if (Array.isArray(object.material)) {
+                  object.material.forEach(m => m.dispose());
+              } else {
+                  object.material.dispose();
+              }
+          }
+          wardrobeGroup.remove(object);
+      }
+
+      // Load body material (texture or color)
+      const loadBodyMaterial = new Promise((resolve) => {
+          if (bodyTextureURL && bodyTextureURL !== '') {
+              textureLoader.load(bodyTextureURL, 
+                  (texture) => {
+                      texture.wrapS = THREE.ClampToEdgeWrapping;
+                      texture.wrapT = THREE.ClampToEdgeWrapping;
+                      texture.repeat.set(1, 1); 
+                      resolve(new THREE.MeshStandardMaterial({ map: texture, metalness: 0.1, roughness: 0.7 }));
+                  },
+                  undefined,
+                  (err) => {
+                      console.error('An error occurred loading body texture:', err);
+                      resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(bodyBaseColor), metalness: 0.1, roughness: 0.7 }));
+                  }
+              );
+          } else {
+              resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(bodyBaseColor), metalness: 0.1, roughness: 0.7 }));
+          }
+      });
+
+      // Load door material (texture or color)
+      const loadDoorMaterial = new Promise((resolve) => {
+          if (doorTextureURL && doorTextureURL !== '') {
+              textureLoader.load(doorTextureURL, 
+                  (texture) => {
+                      texture.wrapS = THREE.ClampToEdgeWrapping;
+                      texture.wrapT = THREE.ClampToEdgeWrapping;
+                      texture.repeat.set(1, 1); 
+                      resolve(new THREE.MeshStandardMaterial({ map: texture, metalness: 0.1, roughness: 0.7 }));
+                  },
+                  undefined,
+                  (err) => {
+                      console.error('An error occurred loading door texture:', err);
+                      resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(doorBaseColor), metalness: 0.1, roughness: 0.7 }));
+                  }
+              );
+          } else {
+              resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(doorBaseColor), metalness: 0.1, roughness: 0.7 }));
+          }
+      });
+
+      // Load handle material (texture or color, or default metallic)
+      const loadHandleMaterial = new Promise((resolve) => {
+          if (handleTextureURL && handleTextureURL !== '') {
+              textureLoader.load(handleTextureURL, 
+                  (texture) => {
+                      texture.wrapS = THREE.ClampToEdgeWrapping;
+                      texture.wrapT = THREE.ClampToEdgeWrapping;
+                      texture.repeat.set(1, 1); 
+                      resolve(new THREE.MeshStandardMaterial({ map: texture, metalness: 0.6, roughness: 0.3 }));
+                  },
+                  undefined,
+                  (err) => {
+                      console.error('An error occurred loading handle texture:', err);
+                      resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(handleBaseColor), metalness: 0.6, roughness: 0.3 }));
+                  }
+              );
+          } else {
+              resolve(new THREE.MeshStandardMaterial({ color: new THREE.Color(handleBaseColor), metalness: 0.6, roughness: 0.3 }));
+          }
+      });
+
+      // Wait for all materials to load before building the wardrobe
+      Promise.all([loadBodyMaterial, loadDoorMaterial, loadHandleMaterial]).then(materials => {
+          bodyMaterial = materials[0];
+          doorMaterial = materials[1];
+          handleMaterial = materials[2];
+          shelfMaterial = new THREE.MeshStandardMaterial({ color: new THREE.Color(shelfColor), metalness: 0.1, roughness: 0.7 });
+
+          const thickness = 0.1; // Thickness of panels
+          addWardrobeParts(wardrobeWidth, wardrobeHeight, wardrobeDepth, thickness, bodyMaterial, doorMaterial, shelfMaterial, handleMaterial, shelfCount, isExteriorView);
+      });
+  }
+
+  // Helper function to add wardrobe parts (called after all materials are ready)
+  function addWardrobeParts(width, height, depth, thickness, bodyMaterial, doorMaterial, shelfMaterial, handleMaterial, shelfCount, isExteriorView) {
+      // Back Panel
+      const backGeometry = new THREE.BoxGeometry(width, height, thickness);
+      const backPanel = new THREE.Mesh(backGeometry, bodyMaterial);
+      backPanel.position.z = -depth / 2 + thickness / 2;
+      wardrobeGroup.add(backPanel);
+
+      // Top Panel
+      const topGeometry = new THREE.BoxGeometry(width, thickness, depth);
+      const topPanel = new THREE.Mesh(topGeometry, bodyMaterial);
+      topPanel.position.y = height / 2 - thickness / 2;
+      wardrobeGroup.add(topPanel);
+
+      // Bottom Panel
+      const bottomGeometry = new THREE.BoxGeometry(width, thickness, depth);
+      const bottomPanel = new THREE.Mesh(bottomGeometry, bodyMaterial);
+      bottomPanel.position.y = -height / 2 + thickness / 2;
+      wardrobeGroup.add(bottomPanel);
+
+      // Side Panels (global references)
+      const sideGeometry = new THREE.BoxGeometry(thickness, height, depth);
+      leftPanel = new THREE.Mesh(sideGeometry, bodyMaterial);
+      leftPanel.position.x = -width / 2 + thickness / 2;
+      wardrobeGroup.add(leftPanel);
+
+      rightPanel = new THREE.Mesh(sideGeometry, bodyMaterial);
+      rightPanel.position.x = width / 2 - thickness / 2;
+      wardrobeGroup.add(rightPanel);
+
+      // Doors (global references)
+      const doorWidth = (width - thickness * 2) / 2; // Account for side panel thickness
+      const doorHeight = height - thickness * 2; // Account for top/bottom panel thickness
+      const doorDepth = thickness;
+
+      leftDoor = new THREE.Mesh(createRoundedBox(doorWidth, doorHeight, doorDepth), doorMaterial);
+      leftDoor.position.set(-doorWidth / 2 - thickness / 2, 0, depth / 2 - doorDepth / 2); // Position in front
+      wardrobeGroup.add(leftDoor);
+
+      rightDoor = new THREE.Mesh(createRoundedBox(doorWidth, doorHeight, doorDepth), doorMaterial);
+      rightDoor.position.set(doorWidth / 2 + thickness / 2, 0, depth / 2 - doorDepth / 2); // Position in front
+      wardrobeGroup.add(rightDoor);
+
+      // Door Handles (global references)
+      const handleRadius = 0.05;
+      const handleHeight = 0.3;
+      const handleGeometry = new THREE.CylinderGeometry(handleRadius, handleRadius, handleHeight, 16);
+
+      leftHandle = new THREE.Mesh(handleGeometry, handleMaterial);
+      leftHandle.rotation.z = Math.PI / 2; // Rotate to be horizontal
+      leftHandle.position.set(-doorWidth / 2 - thickness / 2 + (doorWidth / 2 - 0.1), 0, depth / 2 + handleRadius); // Adjusted for door position
+      wardrobeGroup.add(leftHandle);
+
+      rightHandle = new THREE.Mesh(handleGeometry, handleMaterial);
+      rightHandle.rotation.z = Math.PI / 2; // Rotate to be horizontal
+      rightHandle.position.set(doorWidth / 2 + thickness / 2 - (doorWidth / 2 - 0.1), 0, depth / 2 + handleRadius); // Adjusted for door position
+      wardrobeGroup.add(rightHandle);
+
+      // Shelves
+      if (shelfCount > 0) {
+          const innerWidth = width - 2 * thickness;
+          const innerHeight = height - 2 * thickness;
+          const innerDepth = depth - 2 * thickness;
+          const shelfThickness = 0.05;
+          const shelfSpacing = innerHeight / (shelfCount + 1);
+
+          for (let i = 1; i <= shelfCount; i++) {
+              const yPos = -innerHeight / 2 + shelfSpacing * i;
+              const shelfGeometry = new THREE.BoxGeometry(innerWidth * 0.9, shelfThickness, innerDepth * 0.9);
+              const shelf = new THREE.Mesh(shelfGeometry, shelfMaterial);
+              shelf.position.set(0, yPos, 0);
+              wardrobeGroup.add(shelf);
+          }
+      }
+
+      // Apply view toggle properties
+      applyViewProperties(isExteriorView);
+
+      // Center the wardrobe group
+      const bbox = new THREE.Box3().setFromObject(wardrobeGroup);
+      const center = bbox.getCenter(new THREE.Vector3());
+      wardrobeGroup.position.sub(center); // Adjust position to center the group
+      renderer.render(scene, camera); // Re-render after adding parts
+  }
+
+  // Function to apply view-specific properties
+  function applyViewProperties(isExteriorView) {
+      if (!leftDoor || !rightDoor || !leftPanel || !rightPanel || !leftHandle || !rightHandle) {
+          // If parts are not yet initialized, exit
+          return;
+      }
+
+      if (!isExteriorView) {
+          // Interior View: Make front doors and side panels transparent/hidden
+          leftDoor.material.transparent = true;
+          leftDoor.material.opacity = 0.2; // Semi-transparent
+          rightDoor.material.transparent = true;
+          rightDoor.material.opacity = 0.2; // Semi-transparent
+          
+          leftPanel.material.transparent = true;
+          leftPanel.material.opacity = 0.2;
+          rightPanel.material.transparent = true;
+          rightPanel.material.opacity = 0.2;
+          
+          // Hide handles for interior view
+          leftHandle.visible = false;
+          rightHandle.visible = false;
+      } else {
+          // Exterior View: Make all parts fully opaque and visible
+          leftDoor.material.transparent = false;
+          leftDoor.material.opacity = 1;
+          rightDoor.material.transparent = false;
+          rightDoor.material.opacity = 1;
+
+          leftPanel.material.transparent = false;
+          leftPanel.material.opacity = 1;
+          rightPanel.material.transparent = false;
+          rightPanel.material.opacity = 1;
+
+          leftHandle.visible = true;
+          rightHandle.visible = true;
+      }
+      renderer.render(scene, camera); // Re-render after applying view properties
+  }
+
+  // --- Event Listeners ---
+  const exteriorViewBtn = document.getElementById('exteriorViewBtn');
+  const interiorViewBtn = document.getElementById('interiorViewBtn');
+
+  exteriorViewBtn.addEventListener('click', () => {
+      exteriorViewBtn.classList.add('active');
+      interiorViewBtn.classList.remove('active');
+      applyViewProperties(true); // Call applyViewProperties directly
+  });
+
+  interiorViewBtn.addEventListener('click', () => {
+      interiorViewBtn.classList.add('active');
+      exteriorViewBtn.classList.remove('active');
+      applyViewProperties(false); // Call applyViewProperties directly
+  });
+
+  // --- Animation Loop ---
+  function animate() {
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+
+  // --- Handle Window Resize ---
+  window.addEventListener('resize', () => {
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+  });
+
+  // Initial build of the wardrobe when the page loads
+  window.onload = function() {
+      // Start with exterior view by default
+      buildWardrobe(true);
+      animate();
+  };
+</script>
+{% endblock %}

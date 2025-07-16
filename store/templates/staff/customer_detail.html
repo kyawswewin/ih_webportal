@@ -1,0 +1,60 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Customer: {{ customer.username }}{% endblock %}
+{% block page_title %}Customer Details: {{ customer.username }}{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Customer Profile</h2>
+        <form method="POST">
+            {% csrf_token %}
+            {% for field in form %}
+                <div class="mb-4">
+                    <label for="{{ field.id_for_label }}" class="block text-gray-700 text-sm font-bold mb-2">
+                        {{ field.label }}:
+                    </label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <p class="text-gray-600 text-xs italic">{{ field.help_text }}</p>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p class="text-red-500 text-xs italic">{{ error }}</p>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
+                Update Customer
+            </button>
+        </form>
+    </div>
+
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <h2 class="text-xl font-bold mb-4 text-gray-800">Recent Orders ({{ customer.username }})</h2>
+        <ul class="divide-y divide-gray-200">
+            {% for order in customer_orders %}
+            <li class="py-3 flex justify-between items-center">
+                <a href="{% url 'staff_order_detail' order.id %}" class="text-blue-600 hover:underline">
+                    Order #{{ order.order_number }} - ${{ order.total_amount|floatformat:2 }}
+                </a>
+                <span class="text-sm text-gray-600">{{ order.created_at|date:"M d, Y" }}</span>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full
+                    {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                    {% elif order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                    {% elif order.status == 'Cancelled' %}bg-red-100 text-red-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ order.get_status_display }}
+                </span>
+            </li>
+            {% empty %}
+            <li class="py-3 text-gray-500">No recent orders for this customer.</li>
+            {% endfor %}
+        </ul>
+        {% if customer_orders|length > 0 %}
+            <div class="mt-4 text-right">
+                <a href="{% url 'staff_order_list' %}?q={{ customer.username }}" class="text-indigo-600 hover:underline text-sm">View all orders by this customer &rarr;</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

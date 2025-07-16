@@ -1,0 +1,690 @@
+{% extends "main/base.html" %}
+{% load static %}
+
+{% block title %}{{ block.super }} - Staff Panel{% endblock %} {# Appends " - Staff Panel" to the original title #}
+
+{% block extra_css %}
+    {{ block.super }} {# This is important! It brings in CSS from the parent base.html #}
+    <style>
+        /* --- Base & Variables --- */
+        :root {
+            --sidebar-bg: #2b3a55; /* Dark blue/gray */
+            --sidebar-text: #e0e7ff; /* Light blue text */
+            --sidebar-hover-bg: #a3bfda; /* Slightly lighter on hover */
+            --sidebar-active-bg: #88b4dd; /* Darker for active */
+            --sidebar-accent: #454ecc; /* Indigo 500 */
+
+            --main-bg: #f8fafc; /* Lighter background for content */
+            --card-bg: #ffffff;
+            --text-color-dark: #1f2937; /* Gray 900 */
+            --text-color-light: #4b5563; /* Gray 700 */
+            --border-color: #e5e7eb; /* Gray 200 */
+
+            --header-height: 0px; /* Define if your main header has a fixed height */
+            --footer-height: 0px; /* Define if your main footer has a fixed height */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif; /* Example: Use a modern font like Inter */
+            color: var(--text-color-dark);
+        }
+
+        /* --- Layout Structure --- */
+        .staff-layout-wrapper {
+            display: flex;
+            flex-direction: row;
+            /* Adjust min-height based on actual header/footer heights if they are outside body_content */
+            min-height: calc(100vh - var(--header-height) - var(--footer-height)); 
+            flex-grow: 1; 
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: var(--sidebar-text);
+            padding: 24px 0; /* Slightly more vertical padding */
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 20;
+            box-shadow: 3px 0 10px rgba(0,0,0,0.25); /* Stronger, softer shadow */
+            overflow-y: auto; /* Enable scrolling for long sidebars */
+            border-right: 1px solid rgba(255,255,255,0.05); /* Subtle right border */
+        }
+        .sidebar h2 {
+            padding-left: 20px;
+            padding-right: 20px;
+            font-size: 1.5rem; /* Larger title */
+            font-weight: 700; /* Bolder title */
+            color: #ffffff; /* White title */
+            margin-bottom: 24px;
+        }
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 12px; /* More space between icon and text */
+            padding: 14px 20px; /* More padding */
+            color: var(--sidebar-text);
+            text-decoration: none;
+            transition: background-color 0.2s ease, color 0.2s ease, border-left-color 0.2s ease;
+            font-size: 0.95rem; /* Slightly smaller text for links */
+            font-weight: 500;
+            border-left: 4px solid transparent; /* Default transparent border */
+        }
+        .sidebar a:hover {
+            background-color: var(--sidebar-hover-bg);
+            color: #ffffff; /* White text on hover */
+        }
+        .sidebar a.active {
+            background-color: var(--sidebar-active-bg);
+            color: #ffffff; /* White text for active */
+            font-weight: 600; /* Slightly bolder for active */
+            border-left-color: var(--sidebar-accent); /* Accent for active */
+        }
+        .sidebar svg {
+            width: 20px;
+            height: 20px;
+            color: #94a3b8; /* Slate 400 for icons */
+            transition: color 0.2s ease;
+        }
+        .sidebar a:hover svg {
+            color: #ffffff; /* White icon on hover */
+        }
+        .sidebar a.active svg {
+            color: var(--sidebar-accent); /* Active icon color matches accent */
+        }
+        .sidebar hr {
+            border-color: rgba(255,255,255,0.1); /* Lighter divider */
+            margin: 20px 20px;
+        }
+        .sidebar button {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            text-align: left;
+            padding: 14px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #fca5a5; /* Red 300 for logout */
+            transition: background-color 0.2s ease, color 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .sidebar button:hover {
+            background-color: #dc2626; /* Red 600 on hover */
+            color: #ffffff;
+        }
+        .sidebar button svg {
+            color: #fca5a5; /* Red 300 for logout icon */
+            transition: color 0.2s ease;
+        }
+        .sidebar button:hover svg {
+            color: #ffffff;
+        }
+
+        /* --- NEW: Modern Sidebar Styles --- */
+        .sidebar-modern {
+            background: rgba(255, 255, 255, 0.95); /* Light translucent background */
+            backdrop-filter: blur(12px); /* Glassmorphism effect */
+            border: 1.5px solid #cbd5e1; /* Subtle light border */
+            border-radius: 1rem; /* Rounded corners for the inner content */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            padding: 1.5rem 1rem; /* Adjust padding */
+            display: flex;
+            flex-direction: column;
+            height: 100%; /* Fill parent height */
+        }
+
+        .sidebar-modern-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem; /* Space between icon and label */
+            padding: 0.65rem 0.75rem; /* Padding for links */
+            border-radius: 0.625rem; /* Rounded link background */
+            transition: all 0.2s ease-in-out;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .sidebar-modern-link:hover {
+            background-color: #e2e8f0; /* Light hover background */
+        }
+
+        .sidebar-modern-link.active {
+            background-color: #e0e7ff; /* Lighter active background */
+            font-weight: 600;
+        }
+
+        .sidebar-modern-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem; /* Square icon background */
+            height: 2.5rem;
+            border-radius: 0.5rem; /* Rounded icon background */
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08); /* Subtle shadow for icons */
+        }
+
+        /* Icon colors and hover/active states */
+        .sidebar-modern-link .sidebar-modern-icon {
+            background-color: #e2e8f0; /* Default background for icons */
+            color: #334155; /* Default icon color (slate-700) */
+        }
+
+        /* Specific hover colors for each icon type */
+        .sidebar-modern-link.group:hover .sidebar-modern-icon.bg-blue-200 { background-color: #bfdbfe; color: #1d4ed8; } /* Dashboard */
+        .sidebar-modern-link.group.active .sidebar-modern-icon.bg-blue-200 { background-color: #93c5fd; color: #1e40af; }
+
+        .sidebar-modern-link.group:hover .sidebar-modern-icon.bg-green-200 { background-color: #d1fae5; color: #065f46; } /* Orders */
+        .sidebar-modern-link.group.active .sidebar-modern-icon.bg-green-200 { background-color: #a7f3d0; color: #047857; }
+
+        .sidebar-modern-link.group:hover .sidebar-modern-icon.bg-purple-200 { background-color: #e9d5ff; color: #6b21a8; } /* Furniture */
+        .sidebar-modern-link.group.active .sidebar-modern-icon.bg-purple-200 { background-color: #d8b4fe; color: #7e22ce; }
+
+        .sidebar-modern-link.group:hover .sidebar-modern-icon.bg-pink-200 { background-color: #fecdd3; color: #be185d; } /* Customers */
+        .sidebar-modern-link.group.active .sidebar-modern-icon.bg-pink-200 { background-color: #fda4af; color: #e11d48; }
+
+        .sidebar-modern-link.group:hover .sidebar-modern-icon.bg-yellow-200 { background-color: #fef08a; color: #a16207; } /* Categories */
+        .sidebar-modern-link.group.active .sidebar-modern-icon.bg-yellow-200 { background-color: #fde047; color: #b45309; }
+
+        /* Logout button specific styles */
+        .sidebar-modern-link.group.text-red-600:hover .sidebar-modern-icon { background-color: #fca5a5 !important; color: #b91c1c !important; }
+        .sidebar-modern-link.group.text-red-600.active .sidebar-modern-icon { background-color: #ef4444 !important; color: #991b1b !important; }
+
+
+        .sidebar-modern-label {
+            color: #1e293b; /* Dark text for labels */
+            transition: color 0.2s ease-in-out;
+        }
+
+        .sidebar-modern-link:hover .sidebar-modern-label {
+            color: #1e293b; /* Keep dark on hover for clarity */
+        }
+
+        .sidebar-modern-link.active .sidebar-modern-label {
+            color: #1a202c; /* Even darker for active */
+        }
+
+        /* --- Main Content Wrapper --- */
+        .staff-main-content-wrapper {
+            flex-grow: 1;
+            padding: 24px; /* More padding */
+            background-color: var(--main-bg);
+            color: var(--text-color-dark);
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* --- Header --- */
+        .staff-header {
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08); /* Stronger, softer shadow */
+            padding: 1.25rem 1.75rem; /* More padding */
+            margin-bottom: 24px;
+            border-radius: 12px; /* More rounded corners */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border-color); /* Subtle border */
+        }
+        .staff-header h1 {
+            font-size: 1.8rem; /* Larger page title */
+            font-weight: 700;
+            color: var(--text-color-dark);
+        }
+        .staff-header .welcome-text {
+            color: var(--text-color-light);
+            font-weight: 500;
+        }
+
+        /* --- Messages --- */
+        .messages {
+            list-style: none;
+            padding: 0;
+            margin-bottom: 24px;
+        }
+        .messages li {
+            padding: 16px 24px; /* More padding */
+            margin-bottom: 12px; /* More space between messages */
+            border-radius: 8px; /* More rounded corners */
+            font-weight: 600; /* Bolder text */
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05); /* Subtle shadow for messages */
+        }
+        .messages .success { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+        .messages .error { background-color: #fee2e2; color: #ef4444; border: 1px solid #fecaca; }
+        .messages .warning { background-color: #fffbeb; color: #f59e0b; border: 1px solid #fef3c7; }
+        .messages .info { background-color: #eff6ff; color: #3b82f6; border: 1px solid #dbeafe; }
+
+        /* Icon for messages (SVG base64 - existing, good) */
+        .messages li::before {
+            content: '';
+            display: inline-block;
+            width: 1.5em; /* Slightly larger icons */
+            height: 1.5em;
+            vertical-align: middle;
+            margin-right: 0.5em;
+            background-size: contain;
+            background-repeat: no-repeat;
+            flex-shrink: 0; /* Prevent icon from shrinking */
+        }
+        /* ... (Your existing SVG background-image data for success, error, warning, info) ... */
+
+        /* --- Content Area --- */
+        .staff-content-area {
+            flex-grow: 1;
+            background-color: var(--card-bg);
+            padding: 24px; /* More padding */
+            border-radius: 12px; /* More rounded corners */
+            box-shadow: 0 4px 6px rgba(0,0,0,0.08); /* Stronger, softer shadow */
+            border: 1px solid var(--border-color); /* Subtle border */
+        }
+
+        /* --- General Form Element Styling (Apply to elements within content blocks) --- */
+        .staff-content-area input[type="text"],
+        .staff-content-area input[type="email"],
+        .staff-content-area input[type="password"],
+        .staff-content-area input[type="number"],
+        .staff-content-area input[type="date"],
+        .staff-content-area textarea,
+        .staff-content-area select {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: var(--text-color-dark);
+            background-color: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px; /* Slightly rounded */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* Subtle inner shadow */
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .staff-content-area input:focus,
+        .staff-content-area textarea:focus,
+        .staff-content-area select:focus {
+            border-color: var(--sidebar-accent); /* Highlight on focus */
+            outline: 0;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25); /* Soft focus ring */
+        }
+
+        .staff-content-area label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-color-light);
+            font-size: 0.95rem;
+        }
+        
+        .staff-content-area .form-group {
+            margin-bottom: 20px; /* Spacing between form groups */
+        }
+
+        /* Styling for submit buttons within content area */
+        .staff-content-area button[type="submit"],
+        .staff-content-area .btn-primary { /* Generic primary button style */
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.5;
+            color: #ffffff;
+            background-color: var(--sidebar-accent); /* Use accent color */
+            border: 1px solid transparent;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .staff-content-area button[type="submit"]:hover,
+        .staff-content-area .btn-primary:hover {
+            background-color: #4f46e5; /* Slightly darker indigo */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .staff-content-area .btn-secondary { /* Example for secondary button */
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            line-height: 1.5;
+            color: var(--text-color-light);
+            background-color: #e5e7eb; /* Gray 200 */
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .staff-content-area .btn-secondary:hover {
+            background-color: #d1d5db; /* Gray 300 */
+        }
+
+        /* Styling for error messages on form fields */
+        .staff-content-area p.errorlist,
+        .staff-content-area .errorlist li,
+        .staff-content-area .text-red-600 { /* This is from your existing code */
+            color: #dc2626; /* Red 600 */
+            font-size: 0.875rem; /* text-sm */
+            margin-top: 4px; /* mt-1 */
+        }
+
+        /* Basic Table Styling */
+        .staff-content-area table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1.5rem; /* Spacing from elements above */
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            overflow: hidden; /* Ensures rounded corners apply to content */
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .staff-content-area th,
+        .staff-content-area td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .staff-content-area th {
+            background-color: #f9fafb; /* Light gray for table header */
+            color: var(--text-color-light);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .staff-content-area tr:last-child td {
+            border-bottom: none; /* No border on the last row */
+        }
+
+        .staff-content-area tr:hover {
+            background-color: #f3f4f6; /* Subtle hover effect on rows */
+        }
+
+
+        /* --- Responsive adjustments --- */
+        @media (max-width: 768px) {
+            .staff-layout-wrapper {
+                flex-direction: column; /* Stack sidebar and content */
+            }
+            .sidebar {
+                width: 0;
+                overflow-x: hidden;
+                transition: width 0.3s ease-in-out;
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 50;
+                box-shadow: none; /* Shadow handled by overlay */
+            }
+            .sidebar.open {
+                width: 250px;
+                box-shadow: 3px 0 10px rgba(0,0,0,0.25); /* Show shadow when open */
+            }
+            .staff-main-content-wrapper {
+                padding: 16px; /* Less padding on small screens */
+            }
+            .staff-header {
+                padding: 1rem 1rem;
+                margin-bottom: 16px;
+            }
+            .staff-header h1 {
+                font-size: 1.5rem;
+            }
+            /* Overlay for mobile staff sidebar */
+            #staffSidebarOverlay {
+                display: block; /* Show overlay */
+                position: fixed;
+                inset: 0;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 40; /* Between staff sidebar and main content */
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s ease-in-out;
+            }
+            #staffSidebarOverlay.active {
+                opacity: 1;
+                pointer-events: auto;
+            }
+            /* Hide the main site's mobile sidebar button if a staff sidebar button is shown */
+            body.staff-panel-active #mobileMenuButton {
+                display: none; /* Assuming #mobileMenuButton is your main site's menu button */
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block body_content %} 
+
+    <div class="staff-layout-wrapper">
+        <div class="sidebar" id="staffSidebar">
+            <div class="sidebar-modern flex flex-col gap-2 px-4 py-6 h-full justify-start rounded-xl shadow-xl" style="background: rgba(255,255,255,0.95); backdrop-filter: blur(12px); border: 1.5px solid #cbd5e1;">
+                <div class="flex items-center gap-3 mb-8 pl-2">
+                    <svg class="w-9 h-9" viewBox="0 0 24 24" fill="none">
+                        <rect x="4" y="4" width="16" height="16" rx="6" fill="#cbd5e1"/>
+                        <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">
+                            <tspan fill="#1e293b">I</tspan>
+                            <tspan fill="#475569">H</tspan>
+                        </text>
+                    </svg>
+                    <span class="font-extrabold text-xl text-slate-900 tracking-wide">INHOUSE</span>
+                </div>
+                <nav class="w-full flex-grow">
+                    <ul class="flex flex-col gap-1">
+                        <li>
+                            <a href="{% url 'staff_dashboard' %}" class="sidebar-modern-link group {% if request.resolver_match.url_name == 'staff_dashboard' %}active{% endif %}">
+                                <span class="sidebar-modern-icon bg-blue-100 text-blue-700">
+                                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                        <circle cx="12" cy="12" r="9" fill="#38bdf8">
+                                            <animate attributeName="fill" values="#38bdf8;#0ea5e9;#38bdf8" dur="1.2s" repeatCount="indefinite"/>
+                                        </circle>
+                                        <path d="M8 12h8" stroke="#6366f1" stroke-width="2" stroke-linecap="round">
+                                            <animate attributeName="stroke" values="#6366f1;#818cf8;#6366f1" dur="1.2s" repeatCount="indefinite"/>
+                                        </path>
+                                        <path d="M12 8v8" stroke="#6366f1" stroke-width="2" stroke-linecap="round">
+                                            <animate attributeName="stroke" values="#6366f1;#818cf8;#6366f1" dur="1.2s" repeatCount="indefinite"/>
+                                        </path>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-modern-label">Dashboard</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'staff_order_list' %}" class="sidebar-modern-link group {% if 'staff_order' in request.resolver_match.url_name %}active{% endif %}">
+                                <span class="sidebar-modern-icon bg-green-100 text-green-700">
+                                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                        <rect x="4" y="6" width="16" height="12" rx="3" fill="#22d3ee">
+                                            <animate attributeName="fill" values="#22d3ee;#06b6d4;#22d3ee" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <path d="M8 12h8" stroke="#059669" stroke-width="2" stroke-linecap="round">
+                                            <animate attributeName="stroke" values="#059669;#10b981;#059669" dur="1.2s" repeatCount="indefinite"/>
+                                        </path>
+                                        <circle cx="12" cy="12" r="2" fill="#10b981">
+                                            <animate attributeName="fill" values="#10b981;#22d3ee;#10b981" dur="1.2s" repeatCount="indefinite"/>
+                                        </circle>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-modern-label">Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'staff_furniture_list' %}" class="sidebar-modern-link group {% if 'staff_furniture' in request.resolver_match.url_name %}active{% endif %}">
+                                <span class="sidebar-modern-icon bg-purple-100 text-purple-700">
+                                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                        <rect x="6" y="10" width="12" height="6" rx="2" fill="#a78bfa">
+                                            <animate attributeName="fill" values="#a78bfa;#c4b5fd;#a78bfa" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <rect x="9" y="6" width="6" height="4" rx="1" fill="#f472b6">
+                                            <animate attributeName="fill" values="#f472b6;#f9a8d4;#f472b6" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <circle cx="12" cy="16" r="1.5" fill="#c4b5fd">
+                                            <animate attributeName="fill" values="#c4b5fd;#a78bfa;#c4b5fd" dur="1.2s" repeatCount="indefinite"/>
+                                        </circle>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-modern-label">Furniture</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'staff_customer_list' %}" class="sidebar-modern-link group {% if 'staff_customer' in request.resolver_match.url_name %}active{% endif %}">
+                                <span class="sidebar-modern-icon bg-pink-100 text-pink-700">
+                                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                        <ellipse cx="12" cy="11" rx="4" ry="3.5" fill="#f472b6">
+                                            <animate attributeName="fill" values="#f472b6;#f9a8d4;#f472b6" dur="1.2s" repeatCount="indefinite"/>
+                                        </ellipse>
+                                        <rect x="7" y="16" width="10" height="3" rx="1.5" fill="#a3e635">
+                                            <animate attributeName="fill" values="#a3e635;#bef264;#a3e635" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <circle cx="12" cy="11" r="1.5" fill="#fff">
+                                            <animate attributeName="fill" values="#fff;#f9a8d4;#fff" dur="1.2s" repeatCount="indefinite"/>
+                                        </circle>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-modern-label">Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'staff_category_list' %}" class="sidebar-modern-link group {% if 'staff_category' in request.resolver_match.url_name %}active{% endif %}">
+                                <span class="sidebar-modern-icon bg-yellow-100 text-yellow-700">
+                                    <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                        <rect x="5" y="10" width="14" height="6" rx="2" fill="#fde68a">
+                                            <animate attributeName="fill" values="#fde68a;#fef08a;#fde68a" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <rect x="9" y="6" width="6" height="3" rx="1.5" fill="#fbbf24">
+                                            <animate attributeName="fill" values="#fbbf24;#f59e0b;#fbbf24" dur="1.2s" repeatCount="indefinite"/>
+                                        </rect>
+                                        <circle cx="12" cy="13" r="1.5" fill="#f59e0b">
+                                            <animate attributeName="fill" values="#f59e0b;#fde68a;#f59e0b" dur="1.2s" repeatCount="indefinite"/>
+                                        </circle>
+                                    </svg>
+                                </span>
+                                <span class="sidebar-modern-label">Categories</span>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+                <hr class="w-4/5 border-t border-slate-300 my-6 self-center"> {# Center the hr element #}
+                <form method="post" action="{% url 'logout' %}" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit" class="sidebar-modern-link group text-red-600 hover:bg-red-50">
+                        <span class="sidebar-modern-icon bg-red-100 text-red-600">
+                            <svg class="w-6 h-6 transition-transform duration-300 group-hover:scale-110 group-active:rotate-12" viewBox="0 0 24 24" fill="none">
+                                <rect x="7" y="8" width="10" height="8" rx="2" fill="#ef4444">
+                                    <animate attributeName="fill" values="#ef4444;#fca5a5;#ef4444" dur="1.2s" repeatCount="indefinite"/>
+                                </rect>
+                                <path d="M12 12v-4" stroke="#fff" stroke-width="2">
+                                    <animate attributeName="stroke" values="#fff;#fca5a5;#fff" dur="1.2s" repeatCount="indefinite"/>
+                                </path>
+                                <path d="M15 12l-3 3-3-3" stroke="#fff" stroke-width="2">
+                                    <animate attributeName="stroke" values="#fff;#fca5a5;#fff" dur="1.2s" repeatCount="indefinite"/>
+                                </path>
+                            </svg>
+                        </span>
+                        <span class="sidebar-modern-label text-red-600">Logout</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div id="staffSidebarOverlay" class="hidden md:hidden fixed inset-0 bg-black bg-opacity-50 opacity-0 pointer-events-none transition-opacity duration-300 z-40"></div>
+
+        <div class="staff-main-content-wrapper">
+            <header class="staff-header">
+                <h1 class="text-2xl font-bold text-gray-800">{% block page_title %}Staff Dashboard{% endblock %}</h1>
+                <div class="welcome-text flex items-center gap-2">
+                    <span class="font-semibold">Welcome, {{ request.user.username }}!</span>
+                    {# Staff-specific mobile menu toggle for the staff sidebar #}
+                    <button id="staffMobileMenuButton" class="md:hidden p-2 rounded-md text-gray-700 hover:bg-red-200">
+                        <svg id="staffMenuIcon" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg id="staffCloseIcon" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            {% if messages %}
+                <ul class="messages">
+                    {% for message in messages %}
+                        <li {% if message.tags %}class="{{ message.tags }}"{% endif %}>
+                            {{ message }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+
+            <div class="staff-content-area">
+                {% block content %}
+                {# Content from individual staff pages (dashboard, order_list, etc.) will be injected here #}
+                {% endblock content %}
+            </div>
+        </div>
+    </div>
+{% endblock body_content %}
+
+{% block extra_js %}
+    {{ block.super }} {# Important: keep parent's JS as well #}
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const staffSidebar = document.getElementById('staffSidebar');
+            const staffMobileMenuButton = document.getElementById('staffMobileMenuButton');
+            const staffMenuIcon = document.getElementById('staffMenuIcon');
+            const staffCloseIcon = document.getElementById('staffCloseIcon');
+            const staffSidebarOverlay = document.getElementById('staffSidebarOverlay');
+
+            function toggleStaffSidebar() {
+                staffSidebar.classList.toggle('open');
+                staffSidebarOverlay.classList.toggle('active');
+                staffMenuIcon.classList.toggle('hidden');
+                staffCloseIcon.classList.toggle('hidden');
+            }
+
+            staffMobileMenuButton?.addEventListener('click', toggleStaffSidebar);
+            staffSidebarOverlay?.addEventListener('click', toggleStaffSidebar); // Close when clicking outside
+
+            // Highlight active link in sidebar
+            const currentPath = window.location.pathname;
+            const sidebarLinks = staffSidebar.querySelectorAll('a.sidebar-modern-link'); // Select only modern links
+            sidebarLinks.forEach(link => {
+                const linkPath = link.getAttribute('href');
+                // Ensure correct active state for nested paths
+                if (linkPath && currentPath.startsWith(linkPath)) {
+                    // Specific check for dashboard to avoid it being active for all /staff/ paths
+                    if (linkPath === '{% url "staff_dashboard" %}' && currentPath !== linkPath) {
+                        return; // Don't activate dashboard if it's not the exact path
+                    }
+                    link.classList.add('active');
+                }
+            });
+
+            // Add a class to the body when on a staff page to potentially hide main site mobile menu button
+            const isStaffPage = currentPath.startsWith('/staff/'); // Adjust this based on your staff URL prefix
+            if (isStaffPage) {
+                document.body.classList.add('staff-panel-active');
+            }
+        });
+    </script>
+{% endblock %}
