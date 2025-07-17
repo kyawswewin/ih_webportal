@@ -63,15 +63,25 @@
     </div>
 
     {% if category.children.all %}
-        {# Add a data attribute to help JS know if this branch contains the selected category #}
-        {% with subtree_active=False %}
-            {% for child in category.children.all %}
-                {% if child.pk == selected_category_id|add:0 %}
-                    {% with subtree_active=True %}{% endwith %}
-                {% endif %}
-            {% endfor %}
+        {# Recursively check if any descendant is selected #}
+        {% with subtree_active=0 %}
+            {% if category.pk == selected_category_id|add:0 %}
+                {% with subtree_active=1 %}{% endwith %}
+            {% else %}
+                {% for child in category.children.all %}
+                    {% if child.pk == selected_category_id|add:0 %}
+                        {% with subtree_active=1 %}{% endwith %}
+                    {% else %}
+                        {% for grandchild in child.children.all %}
+                            {% if grandchild.pk == selected_category_id|add:0 %}
+                                {% with subtree_active=1 %}{% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         {% endwith %}
-        <ul class="relative ml-4 mt-1 category-children" data-subtree-active="{% if category.pk == selected_category_id|add:0 %}1{% else %}{% for child in category.children.all %}{% if child.pk == selected_category_id|add:0 %}1{% endif %}{% endfor %}{% endif %}">
+        <ul class="relative ml-4 mt-1 category-children" data-subtree-active="{% if category.pk == selected_category_id|add:0 %}1{% else %}{% for child in category.children.all %}{% if child.pk == selected_category_id|add:0 %}1{% else %}{% for grandchild in child.children.all %}{% if grandchild.pk == selected_category_id|add:0 %}1{% endif %}{% endfor %}{% endif %}{% endfor %}{% endif %}">
             <div class="absolute left-0 top-0 h-full w-px bg-gray-300 dark:bg-gray-600 ml-4 -translate-x-1/2"></div>
             {% for child in category.children.all %}
                 {% include 'main/_category_subtree.html' with category=child selected_category_id=selected_category_id is_root=False %}
@@ -84,7 +94,7 @@
 function toggleCategory(btn) {
     const children = btn.parentElement.parentElement.querySelector('.category-children');
     if (children) {
-        if (children.style.display === 'none') {
+        if (children.style.display === 'none' || children.style.display === '') {
             children.style.display = 'block';
             btn.querySelector('svg').style.transform = 'rotate(0deg)';
         } else {
@@ -93,9 +103,10 @@ function toggleCategory(btn) {
         }
     }
 }
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Auto-expand branches containing the selected category
     document.querySelectorAll('.category-children').forEach(function(ul) {
-        // Expand if this branch contains the selected category
         if (ul.dataset.subtreeActive === '1') {
             ul.style.display = 'block';
             // Rotate chevron if open

@@ -35,7 +35,8 @@ from .models import Furniture, Category, Brand
 
 def furniture_list(request, category_slug=None, brand_slug=None):
     page_number = request.GET.get('page')
-    request_category_id = request.GET.get('category_id') 
+    request_category_id = request.GET.get('category_id')
+    search_query = request.GET.get('q', '').strip()
     furniture_items = Furniture.objects.filter(is_visible=True)
     selected_category = None
     selected_brand = None
@@ -44,27 +45,35 @@ def furniture_list(request, category_slug=None, brand_slug=None):
     if request_category_id:
         try:
             selected_category = Category.objects.get(pk=request_category_id)
-            categories_to_include = [selected_category.pk] 
+            categories_to_include = [selected_category.pk]
             def get_all_children_pks(category_obj):
                 children_pks = []
                 for child in category_obj.children.all():
                     children_pks.append(child.pk)
-                    children_pks.extend(get_all_children_pks(child)) 
+                    children_pks.extend(get_all_children_pks(child))
                 return children_pks
             categories_to_include.extend(get_all_children_pks(selected_category))
-            
             furniture_items = furniture_items.filter(category__pk__in=categories_to_include)
         except Category.DoesNotExist:
-            furniture_items = Furniture.objects.none() 
+            furniture_items = Furniture.objects.none()
 
     if brand_slug:
         try:
             selected_brand = get_object_or_404(Brand, slug=brand_slug)
             furniture_items = furniture_items.filter(brand=selected_brand)
         except Brand.DoesNotExist:
-            furniture_items = Furniture.objects.none() 
+            furniture_items = Furniture.objects.none()
 
-    furniture_items = furniture_items.order_by('name') 
+    # --- Search Filtering Logic ---
+    if search_query:
+        from django.db.models import Q
+        furniture_items = furniture_items.filter(
+            Q(name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(item_code__icontains=search_query)
+        )
+
+    furniture_items = furniture_items.order_by('name')
     paginator = Paginator(furniture_items, 9)  # Show 9 items per page
     try:
         page_obj = paginator.page(page_number)
@@ -74,9 +83,8 @@ def furniture_list(request, category_slug=None, brand_slug=None):
         page_obj = paginator.page(paginator.num_pages)
 
     categories = Category.objects.filter(parent__isnull=True).prefetch_related('children__children__children').order_by('name')
-    # all_brands = Brand.objects.all().order_by('name')
     recommended_items = Furniture.objects.filter(is_visible=True).order_by('?')[:8] # Get 8 random items
-    featured_items = Furniture.objects.filter(is_visible=True,featured=True).order_by('-id')[:8] # Get 8 featured items
+    featured_items = Furniture.objects.filter(is_visible=True, featured=True).order_by('-id')[:8] # Get 8 featured items
     own_brand_name = 'INHOUSE'
 
     try:
@@ -86,15 +94,16 @@ def furniture_list(request, category_slug=None, brand_slug=None):
     except Brand.DoesNotExist:
         all_brands_ordered = Brand.objects.all().order_by('name')
     context = {
-        'page_obj': page_obj,  
-        'items': page_obj.object_list, 
+        'page_obj': page_obj,
+        'items': page_obj.object_list,
         'categories': categories,
         'brands': all_brands_ordered,
         'selected_category': selected_category,
-        'selected_category_id': int(request_category_id) if request_category_id else None, 
-        'selected_brand': selected_brand, 
+        'selected_category_id': int(request_category_id) if request_category_id else None,
+        'selected_brand': selected_brand,
         'recommended_items': recommended_items,
         'featured_items': featured_items,
+        'search_query': search_query,
     }
     return render(request, 'main/furniture_list.html', context)
 
