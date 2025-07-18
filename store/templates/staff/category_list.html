@@ -25,49 +25,12 @@
 </div>
 
 <div class="bg-white p-6 rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold mb-4 text-gray-800">Existing Categories</h2>
-    {% comment %} 
-        Important: You'll need to pass 'top_level_categories' and 'parent_groups'
-        from your Django view context.
-        Example in your Django view:
-        from django.db.models import Q
-        from .models import Category # Assuming your Category model
-
-        def staff_category_list_view(request):
-            # ... (form handling)
-
-            all_categories = Category.objects.all().order_by('name')
-
-            # Separate top-level (no parent) and parented categories
-            top_level_categories = all_categories.filter(parent__isnull=True)
-
-            # Manually group parented categories for easier iteration in template
-            parent_groups = {}
-            for category in all_categories.filter(parent__isnull=False):
-                if category.parent not in parent_groups:
-                    parent_groups[category.parent] = []
-                parent_groups[category.parent].append(category)
-
-            # Sort children within each parent group (optional, but good practice)
-            for parent, children in parent_groups.items():
-                parent_groups[parent] = sorted(children, key=lambda c: c.name)
-            
-            # Sort parent_groups by parent name (optional)
-            parent_groups = dict(sorted(parent_groups.items(), key=lambda item: item[0].name))
-
-            context = {
-                'form': form,
-                'top_level_categories': top_level_categories,
-                'parent_groups': parent_groups,
-            }
-            return render(request, 'staff/manage_categories.html', context)
-    {% endcomment %}
-
-
     {% if top_level_categories or parent_groups %}
         {% if top_level_categories %}
         <div class="mb-10">
-            <h3 class="text-xl font-bold text-blue-700 dark:text-blue-300 mb-6">Top-Level Categories</h3>
+            <h3 class="text-xl font-bold text-blue-700 dark:text-blue-300 mb-6 flex items-center">
+                    <span class="px-5 py-2 rounded-2xl bg-blue-600 dark:bg-blue-900 text-white dark:text-blue-200 text-lg font-semibold border border-blue-700 dark:border-blue-700 shadow-lg tracking-wide">Main Categories</span>
+            </h3>
             <div class="rounded-3xl bg-gradient-to-br from-blue-100 via-white to-blue-300 dark:from-gray-900 dark:via-gray-800 dark:to-blue-900 p-8 shadow-xl border border-blue-200 dark:border-blue-800">
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 flex-wrap">
                     {% for category in top_level_categories %}

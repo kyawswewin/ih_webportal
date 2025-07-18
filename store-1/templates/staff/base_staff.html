@@ -1,0 +1,34 @@
+import os
+from django.http import HttpResponse
+from django.core.management import call_command
+from django.conf import settings
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render
+from django.utils import timezone
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def backup_database(request):
+    # Define the backup file path
+    backup_file = os.path.join(settings.BASE_DIR, f"db_backup_{timezone.now().strftime('%Y%m%d_%H%M%S')}.json")
+    
+    # Create a backup using dumpdata
+    with open(backup_file, 'w') as outfile:
+        call_command('dumpdata', stdout=outfile)
+    
+    return HttpResponse(f"Database backup created successfully: {backup_file}")
+
+@login_required
+@user_passes_test(lambda u: u.is_staff)
+def restore_database(request):
+    if request.method == 'POST':
+        backup_file = request.POST.get('backup_file')
+        
+        if os.path.exists(backup_file):
+            # Restore the database using loaddata
+            call_command('loaddata', backup_file)
+            return HttpResponse("Database restored successfully.")
+        else:
+            return HttpResponse("Backup file does not exist.")
+    
+    return render(request, 'restore_database.html')  # Create this template for file input

@@ -4,25 +4,30 @@
 {% block page_title %}Customer Management{% endblock %}
 
 {% block content %}
-<div class="mb-6 bg-gray-50 p-4 rounded-lg shadow-sm">
-    <form method="GET" action="{% url 'staff_customer_list' %}" class="flex flex-wrap items-center gap-4">
-        <input type="text" name="q" placeholder="Search by username, email, phone, customer code..."
-               value="{{ search_query }}"
-               class="p-2 border border-gray-300 rounded-md flex-grow max-w-sm">
+<div class="mb-8">
+    <form method="GET" action="{% url 'staff_customer_list' %}" class="w-full max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 px-12 py-8 flex flex-col md:flex-row items-center gap-8">
+        <div class="flex flex-col md:flex-row gap-4 w-full">
+            <input type="text" name="q" placeholder="Search by username, email, phone, customer code..."
+                   value="{{ search_query }}"
+                   class="py-3 px-5 rounded-xl border-2 border-blue-200 dark:border-blue-700 focus:ring-4 focus:ring-blue-400 dark:focus:ring-blue-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-lg text-lg transition placeholder-gray-400 dark:placeholder-gray-500 w-full md:w-72">
 
-        <select name="member_level" class="p-2 border border-gray-300 rounded-md">
-            <option value="">All Member Levels</option>
-            {% for value, label in member_level_choices %}
-            <option value="{{ value }}" {% if selected_member_level == value %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-        </select>
-
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
-            Apply Filters
-        </button>
-        <a href="{% url 'staff_customer_list' %}" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md">
-            Clear Filters
-        </a>
+            <select name="member_level" class="py-3 px-5 rounded-xl border-2 border-blue-200 dark:border-blue-700 focus:ring-4 focus:ring-blue-400 dark:focus:ring-blue-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 shadow-lg text-lg w-full md:w-56">
+                <option value="">All Member Levels</option>
+                {% for value, label in member_level_choices %}
+                <option value="{{ value }}" {% if selected_member_level == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="flex gap-4 w-full md:w-auto justify-center">
+            <button type="submit" class="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-white font-semibold py-3 px-6 rounded-xl shadow focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                Filter
+            </button>
+            <a href="{% url 'staff_customer_list' %}" class="inline-flex items-center gap-2 bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-semibold py-3 px-6 rounded-xl shadow hover:bg-gray-300 dark:hover:bg-gray-700 transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                Clear
+            </a>
+        </div>
     </form>
 </div>
 
