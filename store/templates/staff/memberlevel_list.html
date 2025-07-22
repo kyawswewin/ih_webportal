@@ -1,0 +1,39 @@
+{% extends "staff/base_staff.html" %}
+{% block title %}Member Level Types{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 mt-8">
+    <h2 class="text-2xl font-bold mb-6">Member Level Types</h2>
+    <table class="min-w-full table-auto border-collapse">
+        <thead>
+            <tr class="bg-slate-100 dark:bg-slate-800">
+                <th class="px-4 py-2">Level</th>
+                <th class="px-4 py-2">Image</th>
+                <th class="px-4 py-2">Min Price</th>
+                <th class="px-4 py-2">Max Price</th>
+                <th class="px-4 py-2">Allowance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for level in levels %}
+            <tr class="border-b">
+                <td class="px-4 py-2 font-semibold">{{ level.get_name_display }}</td>
+                <td class="px-4 py-2">
+                    {% if level.image %}
+                        <img src="{{ level.image.url }}" alt="{{ level.get_name_display }}" class="h-10 rounded" />
+                    {% else %}
+                        <span class="text-gray-400">No image</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-2">{{ level.min_price }}</td>
+                <td class="px-4 py-2">{{ level.max_price }}</td>
+                <td class="px-4 py-2">{{ level.allowance }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center py-6 text-gray-500">No member levels found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -126,6 +126,19 @@ class OrderAdmin(admin.ModelAdmin):
                     f"🎉 Membership upgraded for {user.username} from {old_level} to {user.member_level}!",
                     level=messages.SUCCESS
                 )
+from .models import MemberLevel
 
+@admin.register(MemberLevel)
+class MemberLevelAdmin(admin.ModelAdmin):
+    list_display = ('name', 'min_price', 'max_price', 'allowance', 'image_tag')
+    search_fields = ('name',)
+    list_filter = ('name',)
+    readonly_fields = ('image_tag',)
+
+    def image_tag(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" style="height:40px; border-radius:6px;" />', obj.image.url)
+        return "-"
+    image_tag.short_description = "Image"
 
 admin.site.register(CustomUser, CustomUserAdmin)

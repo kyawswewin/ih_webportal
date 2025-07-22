@@ -1,0 +1,27 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Member Level Change Detail{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 mt-8">
+    <h2 class="text-2xl font-bold mb-6">Member Level Change Detail</h2>
+    <div class="mb-4">
+        <span class="font-semibold">User:</span>
+        {{ membership_log.user.username }}<br>
+        <span class="text-xs text-gray-500">{{ membership_log.user.email }}</span>
+    </div>
+    <div class="mb-4">
+        <span class="font-semibold">Old Level:</span>
+        {{ membership_log.old_level }}
+    </div>
+    <div class="mb-4">
+        <span class="font-semibold">New Level:</span>
+        {{ membership_log.new_level }}
+    </div>
+    <div class="mb-4">
+        <span class="font-semibold">Changed At:</span>
+        {{ membership_log.changed_at|date:"Y-m-d H:i" }}
+    </div>
+    <a href="{% url 'staff_mbl_list' %}" class="btn-secondary px-4 py-2 rounded-lg">Back to List</a>
+</div>
+{% endblock %}

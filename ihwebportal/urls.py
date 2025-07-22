@@ -14,7 +14,7 @@ urlpatterns = [
     path('logout/',auth_views.LogoutView.as_view(next_page='/'),name='logout'),
     path('api/', include('store.api_urls')),
     path('customize/', include('customize.urls')),
-    path('staff/', include('store.staff_urls')),
+    path('staff/', include('store.urls_staff')),
 
 
 

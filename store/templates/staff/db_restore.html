@@ -1,0 +1,65 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Restoration - {% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 mt-8">
+    <h2 class="text-2xl font-bold mb-4">Restore Database</h2>
+    {% if show_confirm %}
+    <div class="mb-6">
+        <h3 class="text-lg font-bold mb-2">Preview of backup file: {{ file_name }}</h3>
+        <div class="bg-gray-100 dark:bg-gray-800 rounded p-4 max-h-[600px] overflow-auto text-xs">
+            {% if preview_objects %}
+                <ul>
+                    {% for obj in preview_objects %}
+                        <li class="mb-4 border-b pb-2">
+                            <strong>{{ obj.model }}</strong>
+                            {% if obj.pk %}(pk: {{ obj.pk }}){% endif %}:
+                            <ul class="ml-4">
+                                {% for key, value in obj.fields.items %}
+                                    <li>
+                                        <span class="font-semibold">{{ key }}:</span>
+                                        <span>
+                                            {% if value is list or value is tuple %}
+                                                {{ value|join:", " }}
+                                            {% else %}
+                                                {{ value }}
+                                            {% endif %}
+                                        </span>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <span>No preview data available.</span>
+            {% endif %}
+        </div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="confirm_restore" value="1">
+            <button type="submit" class="btn-primary bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-xl shadow transition-all duration-200 mr-2">Confirm Restore</button>
+            <button type="submit" name="cancel_restore" value="1" class="btn-secondary bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-6 rounded-xl shadow transition-all duration-200">Cancel</button>
+        </form>
+    </div>
+    {% else %}
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <input type="file" name="backup_file" accept=".json" required class="mb-4">
+        <button type="submit" class="btn-primary bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-xl shadow transition-all duration-200">Restore</button>
+    </form>
+    <p class="mt-4 text-sm text-gray-500">Upload a previously downloaded backup file to restore the database.</p>
+    {% endif %}
+    {% if messages %}
+        <ul class="mt-4">
+            {% for message in messages %}
+                <li class="text-green-600">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if error_message %}
+        <div class="mt-4 text-red-600">{{ error_message }}</div>
+    {% endif %}
+</div>
+{% endblock %}

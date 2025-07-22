@@ -1,0 +1,60 @@
+{% extends "staff/base_staff.html" %}
+
+{% block title %}Member Level Logs{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-xl shadow-xl p-8 mt-8">
+    <h2 class="text-2xl font-bold mb-6">Member Level Change Logs</h2>
+    <form method="get" class="mb-6 flex flex-wrap gap-4 items-end">
+        <div>
+            <label for="q" class="block text-sm font-medium">Search User</label>
+            <input type="text" name="q" id="q" value="{{ search_query }}" class="input input-bordered w-48" placeholder="Username or Email">
+        </div>
+        <div>
+            <label for="user" class="block text-sm font-medium">Filter by User</label>
+            <select name="user" id="user" class="input input-bordered w-48">
+                <option value="">All Users</option>
+                {% for user in users %}
+                    <option value="{{ user.id }}" {% if user.id|stringformat:"s" == selected_user|stringformat:"s" %}selected{% endif %}>{{ user.username }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn-primary px-6 py-2 rounded-lg">Filter</button>
+    </form>
+    <div class="overflow-x-auto">
+        <table class="min-w-full table-auto border-collapse">
+            <thead>
+                <tr class="bg-slate-100 dark:bg-slate-800">
+                    <th class="px-4 py-2 text-left">#</th>
+                    <th class="px-4 py-2 text-left">User</th>
+                    <th class="px-4 py-2 text-left">Old Level</th>
+                    <th class="px-4 py-2 text-left">New Level</th>
+                    <th class="px-4 py-2 text-left">Changed At</th>
+                    <th class="px-4 py-2 text-left">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in membership_logs %}
+                <tr class="border-b">
+                    <td class="px-4 py-2">{{ forloop.counter }}</td>
+                    <td class="px-4 py-2">
+                        {{ log.user.username }}<br>
+                        <span class="text-xs text-gray-500">{{ log.user.email }}</span>
+                    </td>
+                    <td class="px-4 py-2">{{ log.old_level }}</td>
+                    <td class="px-4 py-2">{{ log.new_level }}</td>
+                    <td class="px-4 py-2">{{ log.changed_at|date:"Y-m-d H:i" }}</td>
+                    <td class="px-4 py-2">
+                        <a href="{% url 'staff_mbl_detail' log.pk %}" class="text-blue-600 hover:underline">View</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-6 text-gray-500">No membership level changes found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

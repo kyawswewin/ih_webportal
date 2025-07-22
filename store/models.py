@@ -300,3 +300,20 @@ class UserMembershipLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.old_level} → {self.new_level} on {self.changed_at:%Y-%m-%d}"
+class MemberLevel(models.Model):
+    LEVEL_CHOICES = [
+        ('INHOUSE', 'Inhouse'),
+        ('CLASSIC', 'Classic'),
+        ('GOLD', 'Gold'),
+        ('PLATINUM', 'Platinum'),
+        ('DIAMOND', 'Diamond'),
+        ('VVIP', 'VVIP'),
+    ]
+    name = models.CharField(max_length=20, choices=LEVEL_CHOICES, unique=True)
+    image = models.ImageField(upload_to='member_levels/', blank=True, null=True)
+    min_price = models.DecimalField(max_digits=12, decimal_places=2)
+    max_price = models.DecimalField(max_digits=12, decimal_places=2)
+    allowance = models.DecimalField(max_digits=12, decimal_places=2, help_text="Allowance for this level")
+
+    def __str__(self):
+        return self.get_name_display()
