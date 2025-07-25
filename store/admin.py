@@ -1,6 +1,6 @@
 from django.contrib import admin, messages
 from django.utils.html import format_html
-from .models import Brand, CategoryLog, Furniture, Category,CustomUser, Order, OrderItem
+from .models import Brand, CategoryLog, Furniture, Category,CustomUser, Order, OrderItem, Sponsor
 from django.contrib.auth.admin import UserAdmin
 from .forms import CustomUserCreationForm
 
@@ -12,26 +12,22 @@ class BrandAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name', 'parent', '__str__') # Add __str__ for hierarchical view in list
-    # prepopulated_fields = {'slug': ('name',)} # If you add a slug field to Category
+    list_display = ('name', 'parent', '__str__')
 
     def save_model(self, request, obj, form, change):
-        # Save the object first
         super().save_model(request, obj, form, change)
 
-        # Now, create the log entry, passing the user
         action = 'updated' if change else 'created'
         CategoryLog.objects.create(
             category=obj,
             category_name=obj.name,
             action=action,
-            changed_by=request.user # Pass the current logged-in user
+            changed_by=request.user 
         )
 
     def delete_model(self, request, obj):
-        # Log before deleting the object
         CategoryLog.objects.create(
-            category_name=obj.name, # Get name before deletion
+            category_name=obj.name, 
             action='deleted',
             changed_by=request.user,
         )
@@ -142,3 +138,23 @@ class MemberLevelAdmin(admin.ModelAdmin):
     image_tag.short_description = "Image"
 
 admin.site.register(CustomUser, CustomUserAdmin)
+
+
+@admin.register(Sponsor)
+class SponsorAdmin(admin.ModelAdmin):
+    list_display = ('name', 'website')
+    search_fields = ('name',)
+
+    
+from django.contrib import admin
+from .models import ExchangeRate, ExchangeRateLog
+
+class ExchangeRateAdmin(admin.ModelAdmin):
+    list_display = ('currency', 'rate', 'last_updated')
+
+    def save_model(self, request, obj, form, change):
+        obj._changed_by = request.user  # Custom attribute to pass user
+        super().save_model(request, obj, form, change)
+
+admin.site.register(ExchangeRate, ExchangeRateAdmin)
+admin.site.register(ExchangeRateLog)

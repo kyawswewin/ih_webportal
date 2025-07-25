@@ -11,7 +11,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
 from django.contrib.admin.views.decorators import staff_member_required
 
-from .models import Brand, Category, Furniture,Order,OrderItem, Furniture, CustomUser, UserMembershipLog
+from .models import Brand, Category, ExchangeRate, Furniture,Order,OrderItem, Furniture, CustomUser, UserMembershipLog
 from .forms import CategoryForm, CustomUserCreationForm, CustomUserUpdateForm, FurnitureForm, OrderForm
 
 def is_staff_check(user):
@@ -613,9 +613,6 @@ def staff_memberlevel_create(request):
 @login_required
 @user_passes_test(is_staff_check)
 def staff_mbl_list(request):
-    """
-    Staff view to list all membership logs with filtering options.
-    """
     membership_logs = UserMembershipLog.objects.all().select_related('user').order_by('-changed_at')
 
     search_query = request.GET.get('q')
@@ -708,6 +705,92 @@ def staff_category_delete(request, pk):
     }
     return render(request, 'staff/category_confirm_delete.html', context) # Create this template
 
+
+@login_required
+@user_passes_test(is_staff_check)
+def exchange_rate_list(request):
+    rates = ExchangeRate.objects.all().order_by('currency')
+    return render(request, 'exchange_rate/list.html', {'rates': rates})
+
+@login_required
+@user_passes_test(is_staff_check)
+def create_exchange_rate(request):
+    if request.method == 'POST':
+        currency = request.POST.get('currency')
+        rate = request.POST.get('rate')
+        
+
+        try:
+            rate = float(rate)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid rate value. Please enter a valid number.")
+            return render(request, 'exchange_rate/create.html', {'request_post': request.POST})
+
+        if ExchangeRate.objects.filter(currency__iexact=currency).exists(): # use iexact for case-insensitive check
+            messages.error(request, f"Exchange rate for {currency.upper()} already exists. Please update it instead.")
+            return render(request, 'exchange_rate/create.html', {'request_post': request.POST})
+            
+        if rate <= 0:
+            messages.error(request, "Exchange rate must be a positive number.")
+            return render(request, 'exchange_rate/create.html', {'request_post': request.POST})
+
+        currency = currency.upper().strip()
+
+        try:
+            new_rate = ExchangeRate(
+                currency=currency,
+                rate=rate,
+                created_by=request.user
+            )
+            new_rate.save()
+            messages.success(request, f"Exchange rate for {currency} created successfully.")
+            return redirect('exchange_rate_list')
+        except Exception as e: # Catch any other unexpected errors during save
+            messages.error(request, f"An error occurred while saving the exchange rate: {e}")
+            return render(request, 'exchange_rate/create.html', {'request_post': request.POST})
+
+    # For GET request or if form validation fails and re-rendering
+    return render(request, 'exchange_rate/create.html', {'request_post': request.POST if request.method == 'POST' else {}})
+
+@login_required
+@user_passes_test(is_staff_check)
+def update_exchange_rate(request, currency):
+    rate_obj = get_object_or_404(ExchangeRate, currency=currency)
+
+    if request.method == 'POST':
+        new_rate = request.POST.get('rate')
+        try:
+            new_rate = float(new_rate)
+        except (ValueError, TypeError):
+            messages.error(request, "Invalid rate value.")
+            return redirect('update_exchange_rate', currency=currency)
+
+        if new_rate != float(rate_obj.rate):
+            old_rate = rate_obj.rate
+            rate_obj.rate = new_rate
+            rate_obj._old_rate = old_rate
+            rate_obj._changed_by = request.user
+            rate_obj.save()
+
+            messages.success(request, f"{currency} rate updated from {old_rate} to {new_rate}")
+        else:
+            messages.info(request, "No changes detected.")
+
+        return redirect('exchange_rate_list')
+
+    return render(request, 'exchange_rate/update.html', {'rate': rate_obj})
+
+from .models import ExchangeRateLog
+from django.core.paginator import Paginator
+
+@login_required
+@user_passes_test(is_staff_check)
+def exchange_rate_logs(request):
+    logs = ExchangeRateLog.objects.select_related('changed_by').order_by('-timestamp')
+    paginator = Paginator(logs, 25)
+    page = request.GET.get('page')
+    logs_page = paginator.get_page(page)
+    return render(request, 'exchange_rate/logs.html', {'logs': logs_page})
 
 @login_required
 @user_passes_test(is_staff_check)

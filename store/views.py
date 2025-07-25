@@ -18,7 +18,7 @@ from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
 from decimal import Decimal
 
-from .models import Brand, Category, Furniture,Order,OrderItem, Furniture, CustomUser, UserMembershipLog
+from .models import Brand, Category, Furniture,Order,OrderItem, Furniture, CustomUser, Sponsor, UserMembershipLog
 from .forms import CategoryForm, CustomUserCreationForm, CustomUserUpdateForm, FurnitureForm, OrderForm
 from django.shortcuts import render, get_object_or_404
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -33,6 +33,7 @@ def category_list(request):
 
 
 def furniture_list(request, category_slug=None, brand_slug=None):
+    sponsors = Sponsor.objects.all()
     page_number = request.GET.get('page')
     request_category_id = request.GET.get('category_id')
     search_query = request.GET.get('q', '').strip()
@@ -103,8 +104,9 @@ def furniture_list(request, category_slug=None, brand_slug=None):
         'recommended_items': recommended_items,
         'featured_items': featured_items,
         'search_query': search_query,
+        'sponsors': sponsors,
     }
-    return render(request, 'main/furniture_list.html', context)
+    return render(request, 'main/home.html', context)
 
 def furniture_detail(request,pk):
     item = get_object_or_404(Furniture,pk=pk)

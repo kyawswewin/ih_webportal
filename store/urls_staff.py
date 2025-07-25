@@ -27,4 +27,9 @@ urlpatterns = [
 
     path('db-backup/', views_staff.db_backup, name='staff_db_backup'),
     path('db-restore/', views_staff.db_restore, name='staff_db_restore'),
+
+    path('exchange-rates/logs/', views_staff.exchange_rate_logs, name='exchange_rate_logs'),
+    path('exchange-rates/list/', views_staff.exchange_rate_list, name='exchange_rate_list'),
+    path('exchange-rates/create/', views_staff.create_exchange_rate, name='create_exchange_rate'),
+    path('exchange-rates/<str:currency>/update/', views_staff.update_exchange_rate, name='update_exchange_rate'),
 ]

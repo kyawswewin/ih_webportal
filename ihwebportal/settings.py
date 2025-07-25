@@ -26,12 +26,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'store',
     'corsheaders',
     'rest_framework',
     'rest_framework.authtoken',
     'widget_tweaks',
+    'sslserver',
+    'django.contrib.humanize', # for better human-readable formats
     'customize',
+    'store',
+
 ]
 
 REST_FRAMEWORK = {

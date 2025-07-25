@@ -6,6 +6,7 @@ from django.db.models import F # Import F for atomic updates
 from django.db import transaction
 from django.utils.text import slugify
 
+
 class CustomUser(AbstractUser):
     phone = models.CharField(max_length=15, blank=True, null=True)
     nrc = models.CharField(max_length=30, blank=True)
@@ -18,12 +19,12 @@ class CustomUser(AbstractUser):
         default=0.00
     )
     member_level_choices = [
-        ('Bronze', 'Bronze'),
-        ('Silver', 'Silver'),
-        ('Gold', 'Gold'),
-        ('Platinum', 'Platinum'),
-        ('Diamond', 'Diamond'),
-        ('Legend','Legend'),
+        ('INHOUSE', 'Inhouse'),
+        ('CLASSIC', 'Classic'),
+        ('GOLD', 'Gold'),
+        ('PLATINUM', 'Platinum'),
+        ('DIAMOND', 'Diamond'),
+        ('VVIP', 'VVIP'),
     ]
     member_level = models.CharField(
         max_length=10,
@@ -45,19 +46,15 @@ class CustomUser(AbstractUser):
             self.c_code = f'MC-{new_number:05d}'  # e.g., MC-00001
 
         super().save(*args, **kwargs)
+
     def update_membership_level(self):
-        if self.amount >= 100000:
-            self.member_level = 'Legend'
-        elif self.amount >= 50000:
-            self.member_level = 'Diamond'
-        elif self.amount >= 20000:
-            self.member_level = 'Platinum'
-        elif self.amount >= 10000:
-            self.member_level = 'Gold'
-        elif self.amount >= 5000:
-            self.member_level = 'Silver'
-        else:
-            self.member_level = 'Bronze'
+        levels = MemberLevel.objects.all().order_by('min_price')
+
+        for level in levels:
+            if level.min_price >= self.amount <= level.max_price:
+                self.member_level = level.name
+                break
+
     def add_amount_and_update_level(self, amount):
         self.amount += amount
         old_level = self.member_level
@@ -75,8 +72,6 @@ class CustomUser(AbstractUser):
         return self.username
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    # slug = models.SlugField(unique=True, max_length=100, blank=True) # Added slug field
-
     parent = models.ForeignKey(
         'self',
         on_delete=models.SET_NULL, 
@@ -84,12 +79,10 @@ class Category(models.Model):
         blank=True,
         related_name='children'
     )
-
     def __str__(self):
         if self.parent:
             return f"{self.parent.name} > {self.name}"
         return self.name
-
     class Meta:
         verbose_name_plural = "Categories"
         ordering = ['parent__name', 'name']
@@ -262,26 +255,64 @@ class OrderItem(models.Model):
     class Meta:
         unique_together = ('order', 'furniture')
 
+
+class OrderLog(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True,
+                              help_text="The order that was affected (can be null if order was deleted).")
+    action = models.CharField(max_length=20, choices=[
+        ('created', 'Created'),
+        ('updated', 'Updated'),
+        ('deleted', 'Deleted'),
+    ], help_text="Type of action performed on the order.")
+    changed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+                                  help_text="The user who performed the action.")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp'] 
+        verbose_name = "Order Log"
+        verbose_name_plural = "Order Logs"
+
+    def __str__(self):
+        return f"[{self.timestamp.strftime('%Y-%m-%d %H:%M')}] Order {self.order.order_number or self.order.id} {self.action} by {self.changed_by.username}"
+
+@receiver(post_save, sender=Order)
+def log_order_save(sender, instance, created, **kwargs):   
+    if created:
+        action_type = 'created'
+    else:
+        action_type = 'updated'
+
+    OrderLog.objects.create(
+        order=instance,
+        action=action_type,
+        changed_by=instance.user, 
+    )
+@receiver(models.signals.pre_delete, sender=Order)
+def log_order_delete(sender, instance, **kwargs):
+    OrderLog.objects.create(
+        order=instance,
+        action='deleted',
+        changed_by=instance.user, 
+    )
+
 @receiver(post_save, sender=Order)
 def update_user_amount_on_order_delivery(sender, instance, created, **kwargs):
-    # Store old status values before saving for comparison in post_save
     if not created:
         try:
             old_instance = sender.objects.get(pk=instance.pk)
             instance._previous_status = old_instance.status
             instance._previous_payment_status = old_instance.payment_status
         except sender.DoesNotExist:
-            pass # Should not happen in a typical update flow
+            pass 
 
     if not instance.user:
         return
 
-    # Handle the initial creation and immediate 'Delivered'/'Completed' status
     if created and instance.status == 'Delivered' and instance.payment_status == 'Completed':
         instance.user.add_amount_and_update_level(instance.total_amount)
         return
 
-    # Handle status change from non-Delivered/Completed to Delivered/Completed
     previous_status = getattr(instance, '_previous_status', None)
     previous_payment_status = getattr(instance, '_previous_payment_status', None)
 
@@ -300,6 +331,7 @@ class UserMembershipLog(models.Model):
 
     def __str__(self):
         return f"{self.user.username}: {self.old_level} → {self.new_level} on {self.changed_at:%Y-%m-%d}"
+
 class MemberLevel(models.Model):
     LEVEL_CHOICES = [
         ('INHOUSE', 'Inhouse'),
@@ -317,3 +349,81 @@ class MemberLevel(models.Model):
 
     def __str__(self):
         return self.get_name_display()
+    
+class Sponsor(models.Model):
+    name = models.CharField(max_length=100)
+    logo = models.ImageField(upload_to='sponsors/')
+    description= models.CharField(max_length=255, blank=True, null=True)
+    website = models.URLField(blank=True)
+
+    def __str__(self):
+        return self.name
+
+class SponsorLog(models.Model):
+    sponsor = models.ForeignKey(Sponsor, on_delete=models.SET_NULL, null=True, blank=True,
+                                 help_text="The sponsor that was affected (can be null if sponsor was deleted).")
+    sponsor_name = models.CharField(max_length=100, help_text="Name of the sponsor at the time of the log.")
+    action = models.CharField(max_length=20, choices=[
+        ('created', 'Created'),
+        ('updated', 'Updated'),
+        ('deleted', 'Deleted'),
+    ], help_text="Type of action performed on the sponsor.")
+    changed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+                                  help_text="The user who performed the action.")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp'] 
+        verbose_name = "Sponsor Log"
+        verbose_name_plural = "Sponsor Logs"
+
+    def __str__(self):
+        sponsor_info = self.sponsor_name if self.sponsor_name else "Unknown Sponsor"
+        if self.changed_by:
+            return f"[{self.timestamp.strftime('%Y-%m-%d %H:%M')}] {sponsor_info} {self.action} by {self.changed_by.username}"
+        return f"[{self.timestamp.strftime('%Y-%m-%d %H:%M')}] {sponsor_info} {self.action}"
+
+
+
+
+class ExchangeRate(models.Model):
+    currency = models.CharField(max_length=3, unique=True, help_text="e.g., USD, EUR, JPY")
+    rate = models.DecimalField(max_digits=10, decimal_places=2)
+    last_updated = models.DateTimeField(auto_now=True)
+    
+
+    created_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='exchange_rates_changed', 
+        help_text="The user who last created or modified this exchange rate."
+    )
+
+    def __str__(self):
+        return f"{self.currency}: {self.rate}"
+
+    class Meta:
+        ordering = ['currency']
+        verbose_name = "Exchange Rate"
+        verbose_name_plural = "Exchange Rates"
+
+class ExchangeRateLog(models.Model):
+    exchange_rate = models.ForeignKey(ExchangeRate, on_delete=models.SET_NULL, null=True, blank=True,
+                                       help_text="The exchange rate that was affected (can be null if rate was deleted).")
+    currency = models.CharField(max_length=10, help_text="Currency code at the time of the log.")
+    old_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="Old exchange rate before the change.")
+    new_rate = models.DecimalField(max_digits=10, decimal_places=2, help_text="New exchange rate after the change.")
+    changed_by = models.ForeignKey(CustomUser, on_delete=models.SET_NULL, null=True, blank=True,
+                                   help_text="The user who performed the action.")
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp'] 
+        verbose_name = "Exchange Rate Log"
+        verbose_name_plural = "Exchange Rate Logs"
+
+    def __str__(self):
+        return f"[{self.timestamp.strftime('%Y-%m-%d %H:%M')}] {self.currency} rate changed from {self.old_rate} to {self.new_rate} by {self.changed_by.username}"    
+

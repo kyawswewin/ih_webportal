@@ -10,17 +10,12 @@
     <link rel="shortcut icon" href="{% static 'img/logo.ico' %}" type="image/x-icon">
     <link rel="icon" href="{% static 'img/logo.png' %}" type="image/png">
 
-    <script>
-        tailwind.config = {
-            darkMode: 'class'
-        };
-    </script>
-
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script> 
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&display=swap" />
-
+<!-- 
     <style>
         @keyframes fadeIn {
             from {
@@ -48,9 +43,8 @@
         .animate-slideDown {
             animation: slideDown 0.6s ease-out forwards;
         }
-    </style>
+    </style> -->
     {% block extra_css %}
-    {# Other CSS from extending templates will go here, after base styles #}
     {% endblock %}
 </head>
 
@@ -58,7 +52,7 @@
     {% block header %}
     <header class="bg-white dark:bg-gray-800 shadow p-4 mb-6 text-gray-800 dark:text-gray-100 animate-slideDown">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-blue-700 hover:text-blue-800 transition">
+            <a href="/" class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-blue-700 hover:text-blue-800 transition text-decoration-none">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-blue-600 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l9-9 9 9M4 10v10a1 1 0 001 1h14a1 1 0 001-1V10" />
                 </svg>
@@ -226,17 +220,20 @@
         {% endblock content %}
     </main>
     {% endblock body_content %}
+    {% block sponsor %}{% endblock %}
 
-    {% block footer %}
-    <footer class="p-6 text-center bg-gray-800 text-yellow-400 rounded-t-2xl shadow-lg animate-fadeIn w-full dark:bg-gray-950 dark:text-yellow-300">
-        <p class="text-lg font-semibold tracking-wide">
+{% block footer %}
+<footer class="bg-gray-900 dark:bg-gray-950 text-yellow-300 py-10 px-6 shadow-inner w-full rounded-t-3xl">
+    <div class="max-w-6xl mx-auto text-center">
+        <h2 class="text-xl md:text-2xl font-bold tracking-wide text-yellow-400">
             &copy; 2020 <span class="text-yellow-500">Inhouse Industry Co. Ltd</span>
+        </h2>
+        <p class="mt-4 text-sm md:text-base text-yellow-200 leading-relaxed max-w-3xl mx-auto">
+            A global manufacturer of home and office furniture, project development, interior decoration, and space solutions tailored for homes, offices, factories, hospitals, hotels, and schools.
         </p>
-        <p class="mt-2 max-w-4xl mx-auto text-sm leading-relaxed text-yellow-300">
-            A global manufacturer in home and office furniture, furnishing project development, interior decorations, and space solutions for homes, offices, factories, hospitals, hotels, and schools.
-        </p>
-    </footer>
-    {% endblock footer %}
+    </div>
+</footer>
+{% endblock footer %}
 
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
